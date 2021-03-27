@@ -30,3 +30,14 @@ func (b BookMock) FindRowInBook(book models.BookData) (string, error) {
 	}
 	return strs[book.Row], nil
 }
+
+func (b BookMock) ListBooks() ([]models.BookData, error) {
+	var books []models.BookData
+	for name, row := range b {
+		books = append(books, models.BookData{
+			Name: name,
+			Row:  len(row),
+		})
+	}
+	return books, nil
+}

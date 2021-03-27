@@ -62,3 +62,7 @@ func (qs QuestionService) ListUserDecryptedQuestions(username string) ([]models.
 
 	return questions, nil
 }
+
+func (qs QuestionService) ListBooks() ([]models.BookData, error) {
+	return qs.repob.ListBooks()
+}

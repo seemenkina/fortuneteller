@@ -22,8 +22,8 @@ func TestUserService(t *testing.T) {
 func (s *userServiceSuite) SetupTest() {
 	s.user = make(mocks.UserMock)
 	s.service = UserService{
-		repo:  s.user,
-		token: mocks.TokenMock{},
+		Repo:  s.user,
+		Token: mocks.TokenMock{},
 	}
 }
 

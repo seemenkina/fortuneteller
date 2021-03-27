@@ -31,8 +31,8 @@ func (s *questionServiceSuite) SetupTest() {
 		cryp:  mocks.AwesomeCryptoMock{},
 	}
 	s.userService = UserService{
-		repo:  users,
-		token: mocks.TokenMock{},
+		Repo:  users,
+		Token: mocks.TokenMock{},
 	}
 	username := "testUser"
 	token, err := s.userService.Register(username)

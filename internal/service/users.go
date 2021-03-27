@@ -10,12 +10,12 @@ import (
 )
 
 type UserService struct {
-	repo  repository.User
-	token crypto.Token
+	Repo  repository.User
+	Token crypto.Token
 }
 
 func (us UserService) Register(username string) (string, error) {
-	_, err := us.repo.FindUserByName(username)
+	_, err := us.Repo.FindUserByName(username)
 	switch {
 	case errors.Is(err, repository.ErrNoSuchUser):
 		// all ok
@@ -25,23 +25,23 @@ func (us UserService) Register(username string) (string, error) {
 		return "", fmt.Errorf("cant find user : %v", err)
 	}
 
-	token, err := us.token.CreateToken(username)
+	token, err := us.Token.CreateToken(username)
 	if err != nil {
-		return "", fmt.Errorf("cant create token : %v", err)
+		return "", fmt.Errorf("cant create Token : %v", err)
 	}
 
 	user := models.User{
 		Username: username,
 		Token:    token,
 	}
-	if err := us.repo.AddUser(user); err != nil {
+	if err := us.Repo.AddUser(user); err != nil {
 		return "", fmt.Errorf("cant add user : %v", err)
 	}
 	return token, nil
 }
 
 func (us UserService) Login(token string) (models.User, error) {
-	user, err := us.repo.FindUserByToken(token)
+	user, err := us.Repo.FindUserByToken(token)
 	switch {
 	case err == nil:
 		return user, nil
@@ -53,5 +53,5 @@ func (us UserService) Login(token string) (models.User, error) {
 }
 
 func (us UserService) ListUsers() ([]models.User, error) {
-	return us.repo.AllUsers()
+	return us.Repo.AllUsers()
 }
