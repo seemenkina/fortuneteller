@@ -1,0 +1,20 @@
+.outer {
+    display: table;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+}
+
+.heightmax{
+    height: 100%;
+}
+
+.margin{
+    margin-top: 15% !important;
+}
+
+.padding{
+    padding-top: 10.5rem;
+}
