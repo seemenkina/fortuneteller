@@ -3,73 +3,86 @@
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
     <link rel="stylesheet" href="/static/css/reg+log.css">
+    <link rel="stylesheet" href="/static/css/hack.css" />
 </head>
+<style>
+    .page {
+        /*color: #ffffff;*/
+        /*background: rgba(252, 252, 252, 0.7) url("https://live.staticflickr.com/2521/4198754159_cb8a1d7dae_k.jpg") no-repeat;*/
+
+        background: url("/static/images/black-map.jpg") no-repeat;
+        height: 100%; /* Высота страницы */
+        width: 100%;
+        /*position: ;*/
+        background-size: cover;
+    }
+</style>
 
 <body>
-    <div id="back">
-        <div class="backRight"></div>
-        <div class="backLeft"></div>
-    </div>
+<div id="back" class="page">
+    <!--        <div class="backRight"></div>-->
+    <!--        <div class="backLeft"></div>-->
+</div>
 
-    <div id="slideBox">
-        <div class="topLayer">
-            <div class="left">
-                <div class="content">
-                    <h2>Register</h2>
-                    <form id="register-form" method="post" onsubmit="return false;">
-                        <div class="form-group">
-                            <input name="username" type="text" placeholder="username"/>
-                        </div>
-                        <div class="form-group"></div>
-                        <div class="form-group"></div>
-                        <div class="form-group"></div>
-                    </form>
-                    <button id="goLeft" class="off">Login</button>
-                    <button id="register" type="submit">Register</button>
-                </div>
+<div id="slideBox">
+    <div class="topLayer">
+        <div class="left">
+            <div class="content">
+                <h2>Register</h2>
+                <form id="register-form" method="post" onsubmit="return false;">
+                    <div class="form-group">
+                        <input name="username" type="text" placeholder="username"/>
+                    </div>
+                    <div class="form-group"></div>
+                    <div class="form-group"></div>
+                    <div class="form-group"></div>
+                </form>
+                <button id="goLeft" class="off">Login</button>
+                <button id="register" type="submit">Register</button>
             </div>
-            <div class="right">
-                <div class="content">
-                    <h2>Login</h2>
-                    <form id="login-form" method="post" onsubmit="return false;">
-                        <div class="form-group">
-                            <input name="token" type="text" placeholder="token"/>
-                        </div>
-                        <button id="goRight" class="off">Register</button>
-                        <button id="login" type="submit">Login</button>
-                    </form>
-                </div>
+        </div>
+        <div class="right">
+            <div class="content">
+                <h2>Login</h2>
+                <form id="login-form" method="post" onsubmit="return false;">
+                    <div class="form-group">
+                        <input name="token" type="text" placeholder="token"/>
+                    </div>
+                    <button id="goRight" class="off">Register</button>
+                    <button id="login" type="submit">Login</button>
+                </form>
             </div>
         </div>
     </div>
+</div>
 </body>
 
 <script src="/static/js/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
-    $(document).ready(function(){
-        $('#goRight').on('click', function(){
+    $(document).ready(function () {
+        $('#goRight').on('click', function () {
             $('#slideBox').animate({
-                'marginLeft' : '0'
+                'marginLeft': '0'
             });
             $('.topLayer').animate({
-                'marginLeft' : '100%'
+                'marginLeft': '100%'
             });
         });
-        $('#goLeft').on('click', function(){
+        $('#goLeft').on('click', function () {
             $('#slideBox').animate({
-                'marginLeft' : '50%'
+                'marginLeft': '50%'
             });
             $('.topLayer').animate({
                 'marginLeft': '0'
             });
         });
-        $('#register').click( function() {
+        $('#register').click(function () {
             $.ajax({
                 url: '/api/v1/auth/register',
                 type: 'post',
                 dataType: 'json',
                 data: $('#register-form').serialize(),
-                success: function(data) {
+                success: function (data) {
                     console.log(data)
                     window.location = data['redirect']
                 },
@@ -78,13 +91,13 @@
                 }
             });
         });
-        $('#login').click( function() {
+        $('#login').click(function () {
             $.ajax({
                 url: '/api/v1/auth/login',
                 type: 'post',
                 dataType: 'json',
                 data: $('#login-form').serialize(),
-                success: function(data) {
+                success: function (data) {
                     console.log(data)
                     window.location = data['redirect']
                 }
@@ -95,7 +108,6 @@
 </script>
 
 </html>
-
 
 
 <!--Inspiration from: http://ertekinn.com/loginsignup/-->

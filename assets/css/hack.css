@@ -7,14 +7,27 @@
     width: 100%;
 }
 
-.heightmax{
+.heightmax {
     height: 100%;
 }
 
-.margin{
+.margin {
     margin-top: 15% !important;
 }
 
-.padding{
+.padding {
     padding-top: 10.5rem;
+}
+
+.styleb {
+    background-color: #2C3034 !important;
+    box-shadow: none;
+    color: #f5e0c3 !important;
+
+}
+
+styleb:focus {
+    margin-top: 50% !important;
+    background: #f5e0c3 !important;
+    box-shadow: 0 4px 7px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.1);
 }

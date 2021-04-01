@@ -13,9 +13,8 @@ body {
     right: 0;
     width: 50%;
     height: 100%;
-    background: #3498db url(https://download.unsplash.com/photo-1429041966141-44d228a42775);
     background-size: cover;
-    background-position: 50% 50%;
+    background: #3498db url('/static/images/eye.jpg') 50% 50%;
 }
 
 .backLeft {
@@ -23,9 +22,8 @@ body {
     left: 0;
     width: 50%;
     height: 100%;
-    background: #e74c3c url(https://download.unsplash.com/photo-1428279148693-1cf2163ed67d);
     background-size: cover;
-    background-position: 50% 50%;
+    background: #e74c3c url('/static/images/eye.jpg') 50% 50%;
 }
 
 #back {
@@ -63,7 +61,7 @@ body {
 .right {
     width: 50%;
     height: 100%;
-    background: #f9f9f9;
+    background: #2C3034;
     right: 0;
     position: absolute;
 }
@@ -78,19 +76,19 @@ body {
 }
 
 .content h2 {
-    color: #03A9F4;
+    color: #f5e0c3;
     font-weight: 300;
     font-size: 35px;
 }
 
 button {
-    background: #03A9F4;
+    background: #f5e0c3;
     padding: 10px 16px;
     width: auto;
     font-weight: 600;
     text-transform:  uppercase;
     font-size: 14px;
-    color: #fff;
+    color: #000000;
     line-height: 16px;
     letter-spacing: 0.5px;
     border-radius: 2px;
@@ -102,23 +100,23 @@ button {
 }
 
 button:hover {
-    background: #0288D1;
+    background: #f5e0c3;
     box-shadow: 0 4px 7px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.1);
 }
 .off {
     background: none;
-    color: #03A9F4;
+    color: #f5e0c3;
     box-shadow: none;
 }
 
 .right .off:hover {
-    background: #eee;
-    color: #03A9F4;
+    background: #363A3D;
+    color: #f5e0c3;
     box-shadow: none;
 }
 .left .off:hover {
     box-shadow: none;
-    color: #03A9F4;
+    color: #f5e0c3;
     background: #363A3D;
 }
 input {
