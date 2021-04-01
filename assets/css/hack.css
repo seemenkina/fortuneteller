@@ -19,6 +19,13 @@
     padding-top: 10.5rem;
 }
 
+.padding-small{
+    padding-top: 5.5rem;
+}
+.paddings {
+    padding: 2rem 2.5rem 3rem 2.5rem !important;
+}
+
 .styleb {
     background-color: #2C3034 !important;
     box-shadow: none;
@@ -31,3 +38,66 @@ styleb:focus {
     background: #f5e0c3 !important;
     box-shadow: 0 4px 7px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.1);
 }
+
+.stylebook {
+    -webkit-filter: brightness(30%);
+}
+
+input[type='range'] {
+    -webkit-appearance: none !important;
+    background:#2C3034;
+    height:15px;
+
+}
+
+input[type=range]:focus {
+    outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    background:#f5e0c3;
+    height:35px;
+    width:50px;
+    cursor: pointer;
+    border-radius: 3.75em;
+}
+
+img {
+    width: 20vw;
+    height: 20vw;
+    /*padding: 2vw;*/
+}
+
+input[type=radio] {
+    display: none;
+}
+
+img:hover {
+    opacity:0.6;
+    cursor: pointer;
+}
+
+img:active {
+    opacity:0.4;
+    cursor: pointer;
+}
+
+input[type=radio]:checked + label > img {
+    /*border: 20px solid rgb(228, 207, 94);*/
+}
+
+.article_space {
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+.output {
+    font-size: 1.3rem;
+    height: 3.325em;
+    line-height: 3.325em;
+    border-radius: 3.325em;
+    padding: 0 2em;
+    background-color: #2C3034;
+    color:#f5e0c3
+}
+

@@ -14,40 +14,43 @@
     <noscript>
         <link rel="stylesheet" href="/static/css/noscript.css"/>
     </noscript>
+    <style>
+        body {
+            /*color: #ffffff;*/
+            background: rgba(252, 252, 252, 0.7) url("https://live.staticflickr.com/2521/4198754159_cb8a1d7dae_k.jpg") no-repeat;
+            background-size: cover;
+            position: relative;
+            /*background: rgba(252, 252, 252, 0.7) url("https://images.creativemarket.com/0.1.0/ps/7453108/2362/1574/m1/fpnw/wm1/3-.jpg?1576164183&s=f533f17f4470965f792b705ff3bff1e6");*/
+        }
+    </style>
 </head>
-<body class="is-preload outer">
+<body class="is-preload">
 
 <!-- Wrapper -->
 <div id="wrapper" class="divided heightmax">
 
     <!-- Five -->
-    <section class="wrapper color1 style1 align-center heightmax padding">
-        <div class="inner heightmax">
+    <section class="wrapper style1 align-center">
+        <div class="inner heightmax paddings">
             <h1>Ask your question</h1>
             <div class="content">
                 <form method="post" action="answer.html">
                     <div class="fields">
                         <div class="field">
-                            <label for="question">Your question</label>
+                            <label for="question"><h2>Your question</h2></label>
                             <textarea name="question" id="question" rows="1">
                             </textarea>
-
-                        </div>
-                        <div class="field third">
-                            <input type="radio" id="book1" name="book" checked="">
-                            <label for="book1">First Book</label>
-                        </div>
-                        <div class="field third">
-                            <input type="radio" id="book2" name="book" checked="">
-                            <label for="book2">Second Book</label>
-                        </div>
-                        <div class="field third">
-                            <input type="radio" id="book3" name="book" checked="">
-                            <label for="book3">Third Book</label>
+                            <h2>Сhoose one book</h2>
                         </div>
                         <div class="field">
-                            <label for="row">Row in book</label>
-                            <textarea name="row" id="row" rows="1" ></textarea>
+                            <div id="gallery" class="gallery style2 small onscroll-fade-in">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="volume-control"><h2>Сhoose row in book</h2></label>
+                            <input type="range" id="volume-control" style="width: 60%;">
+                            <output for="volume-control" class="output" id="box-range"></output>
                         </div>
 
                     </div>
@@ -64,10 +67,43 @@
 <script src="/static/js/jquery.min.js"></script>
 <script src="/static/js/jquery.scrollex.min.js"></script>
 <script src="/static/js/jquery.scrolly.min.js"></script>
+
+<script lang="JavaScript">
+    function addArticle(name, data, len) {
+        $("#gallery").append(
+            $(`
+                <article class="article_space">
+                        <img src="${name}" alt="" x-data="${data}" x-len=${len}>
+                </article>`)
+        )
+    }
+    addArticle("/static/images/book3.jpg", "xuy", 90)
+    addArticle("/static/images/book2.jpg", "xuy", 52)
+    addArticle("/static/images/book1.jpg", "xuy", 15)
+    addArticle("/static/images/book3.jpg", "xuy", 52)
+    addArticle("/static/images/book2.jpg", "xuy", 52)
+    addArticle("/static/images/book2.jpg", "xuy", 52)
+</script>
+
 <script src="/static/js/browser.min.js"></script>
 <script src="/static/js/breakpoints.min.js"></script>
 <script src="/static/js/util.js"></script>
 <script src="/static/js/main.js"></script>
+
+<script lang="JavaScript">
+    $(document).ready(function () {
+        $('article').click(ev => {
+            $('article>img').removeClass("stylebook")
+            $(ev.target).addClass("stylebook")
+            $("#volume-control").attr("max", $(ev.target).attr("x-len"))
+            $("#volume-control").val($("#volume-control").attr("max")/2).trigger("input")
+        });
+
+        $('#volume-control').on("input", function() {
+            $('#box-range').val(this.value);
+        }).trigger("change");
+    })
+</script>
 
 </body>
 </html>
