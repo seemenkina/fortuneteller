@@ -61,7 +61,6 @@ func (usersubrouter UserSubrouter) HandlerRegisterPost(w http.ResponseWriter, r 
 		"redirect": "/register#" + token,
 	})
 
-	return
 }
 
 func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +102,7 @@ func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *ht
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"redirect": "/homepage",
 	})
-	return
+
 }
 
 func (usersubrouter UserSubrouter) HandlerUsersGet(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +124,6 @@ func (usersubrouter UserSubrouter) HandlerUsersGet(w http.ResponseWriter, r *htt
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"users": names,
 	})
-	return
 }
 
 func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter, r *http.Request) {
@@ -178,17 +176,17 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"questions": answer,
 	})
-	return
+
 }
 
 func (usersubrouter UserSubrouter) HandlerAnswerGet(w http.ResponseWriter, r *http.Request) {
 
-	log.Printf(r.URL.Query().Get("id"))
+	log.Print(r.URL.Query().Get("id"))
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"Question": "qqqqqq",
 		"Answer":   "qqqqqq",
 	})
-	return
+
 }
 
 func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter, r *http.Request) {
@@ -205,5 +203,5 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"redirect": "/answer#" + question,
 	})
-	return
+
 }
