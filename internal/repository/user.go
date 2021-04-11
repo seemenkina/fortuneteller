@@ -17,6 +17,7 @@ type User interface {
 	AllUsers(ctx context.Context) ([]data.User, error)
 	FindUserByName(ctx context.Context, name string) (data.User, error)
 	FindUserByToken(ctx context.Context, token string) (data.User, error)
+	FindUserByID(ctx context.Context, id string) (data.User, error)
 }
 
 type userdb struct {
@@ -71,7 +72,7 @@ func (udb userdb) FindUserByName(ctx context.Context, name string) (data.User, e
 	row := tx.QueryRow(ctx, q, name)
 	if err := row.Scan(&user); err != nil {
 		_ = tx.Rollback(ctx)
-		return data.User{}, fmt.Errorf("can't retieve current user: %v", err)
+		return data.User{}, fmt.Errorf("can't retrieve current user: %v", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -94,7 +95,30 @@ func (udb userdb) FindUserByToken(ctx context.Context, token string) (data.User,
 	row := tx.QueryRow(ctx, q, token)
 	if err := row.Scan(&user); err != nil {
 		_ = tx.Rollback(ctx)
-		return data.User{}, fmt.Errorf("can't retieve current user: %v", err)
+		return data.User{}, fmt.Errorf("can't retrieve current user: %v", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return data.User{}, fmt.Errorf("commit error: %v", err)
+	}
+
+	return user, nil
+}
+
+func (udb userdb) FindUserByID(ctx context.Context, id string) (data.User, error) {
+	tx, err := udb.Begin(ctx)
+	if err != nil {
+		return data.User{}, fmt.Errorf("can't start a transaction: %v", err)
+	}
+
+	const q = `SELECT user_id, user_name, user_token FROM Users
+				WHERE user_id = $1`
+
+	var user data.User
+	row := tx.QueryRow(ctx, q, id)
+	if err := row.Scan(&user); err != nil {
+		_ = tx.Rollback(ctx)
+		return data.User{}, fmt.Errorf("can't retrieve current user: %v", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

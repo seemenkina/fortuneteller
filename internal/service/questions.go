@@ -18,15 +18,15 @@ type QuestionService struct {
 	Cryp  crypto.AwesomeCrypto
 }
 
-func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, book data.BookData) (string, error) {
+func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, book data.BookData) (data.Question, error) {
 	encryptedQuestion, err := qs.Cryp.Encrypt([]byte(question))
 	if err != nil {
-		return "", fmt.Errorf("cant encrypt question : %v", err)
+		return data.Question{}, fmt.Errorf("cant encrypt question : %v", err)
 	}
 
 	answer, err := qs.Repob.FindRowInBook(ctx, book.Name, book.Row)
 	if err != nil {
-		return "", fmt.Errorf("cant find answer : %v", err)
+		return data.Question{}, fmt.Errorf("cant find answer : %v", err)
 	}
 
 	bdata := book.Name + ":" + strconv.Itoa(book.Row)
@@ -38,9 +38,9 @@ func (qs QuestionService) AskQuestion(ctx context.Context, question string, user
 		Owner:    user.ID,
 	}
 	if err := qs.Repoq.AddQuestion(ctx, q); err != nil {
-		return "", fmt.Errorf("cant add question : %v", err)
+		return data.Question{}, fmt.Errorf("cant add question : %v", err)
 	}
-	return answer, nil
+	return q, nil
 }
 
 func (qs QuestionService) ListUserEncryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
@@ -73,4 +73,23 @@ func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, userna
 
 func (qs QuestionService) ListBooks(ctx context.Context) ([]data.Book, error) {
 	return qs.Repob.ListBooks(ctx)
+}
+
+func (qs QuestionService) FindUserQuestionByID(ctx context.Context, id string, username string) (data.Question, error) {
+	question, err := qs.Repoq.FindQuestionByID(ctx, id)
+	if err != nil {
+		return data.Question{}, fmt.Errorf("can't find question")
+	}
+	user, err := qs.Repou.FindUserByName(ctx, username)
+	if err != nil {
+		return data.Question{}, fmt.Errorf("can't find user")
+	}
+	if question.Owner == user.ID {
+		b, err := qs.Cryp.Decrypt([]byte(question.Question))
+		if err != nil {
+			return data.Question{}, fmt.Errorf("cant decrypt question : %v", err)
+		}
+		question.Question = string(b)
+	}
+	return question, nil
 }

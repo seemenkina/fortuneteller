@@ -1,13 +1,14 @@
 package http
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	"fortuneteller/internal/data"
 	"fortuneteller/internal/service"
 	"github.com/gorilla/mux"
 )
@@ -145,6 +146,8 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 		return
 	}
 	log.Printf("UNAME %s", name)
+
+	// TODO: различать текущего пользователя и пользователя для которого запрашивают вопросы
 	questions, err := usersubrouter.QuestionService.ListUserDecryptedQuestions(r.Context(), name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -180,28 +183,102 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 }
 
 func (usersubrouter UserSubrouter) HandlerAnswerGet(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("tokencookie")
+	if err != nil || cookie.Value == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cookie is empty: %v", err),
+		})
+		return
+	}
+	name, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cant get username by token: %v", err),
+		})
+		return
+	}
 
 	log.Print(r.URL.Query().Get("id"))
+
+	question, err := usersubrouter.QuestionService.FindUserQuestionByID(r.Context(),
+		r.URL.Query().Get("id"), name)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cant get question by id: %v", err),
+		})
+		return
+	}
+	if question == (data.Question{}) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"Question": "",
+			"Answer":   "",
+		})
+		return
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"Question": "qqqqqq",
-		"Answer":   "qqqqqq",
+		"Question": question.Question,
+		"Answer":   question.Answer,
 	})
 
 }
 
 func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	cookie, err := r.Cookie("tokencookie")
+	if err != nil || cookie.Value == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cookie is empty: %v", err),
+		})
+		return
+	}
+	name, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cant get username by token: %v", err),
+		})
+		return
+	}
+	user, err := usersubrouter.UserService.Repo.FindUserByName(r.Context(), name)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cant get user by username: %v", err),
+		})
+		return
+	}
+
+	err = r.ParseForm()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("register post error: %v", err),
+			"error": fmt.Sprintf("ask post error: %v", err),
 		})
 		return
 	}
 	log.Printf(r.Form.Get("question"), r.Form.Get("book"), r.Form.Get("page"))
-	question := hex.EncodeToString([]byte(r.Form.Get("question")))
+
+	row, err := strconv.Atoi(r.Form.Get("page"))
+	bookData := data.BookData{
+		Name: r.Form.Get("book"),
+		Row:  row,
+	}
+	question, err := usersubrouter.QuestionService.AskQuestion(
+		r.Context(), r.Form.Get("question"), user, bookData)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("cant ask question: %v", err),
+		})
+		return
+	}
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"redirect": "/answer#" + question,
+		"redirect": "/answer#" + question.ID,
 	})
 
 }

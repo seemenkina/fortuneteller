@@ -12,6 +12,7 @@ import (
 type Question interface {
 	AddQuestion(ctx context.Context, q data.Question) error
 	FindUserQuestion(ctx context.Context, user string) ([]data.Question, error)
+	FindQuestionByID(ctx context.Context, id string) (data.Question, error)
 }
 
 type questiondb struct {
@@ -54,4 +55,28 @@ func (qdb questiondb) FindUserQuestion(ctx context.Context, user string) ([]data
 	}
 
 	return questions, nil
+}
+
+func (qdb questiondb) FindQuestionByID(ctx context.Context, id string) (data.Question, error) {
+
+	tx, err := qdb.Begin(ctx)
+	if err != nil {
+		return data.Question{}, fmt.Errorf("can't start a transaction: %v", err)
+	}
+
+	const q = `SELECT question_id, question_data, question_answer, question_book, question_owner FROM Questions 
+				WHERE question_id = $1`
+
+	var question data.Question
+	row := tx.QueryRow(ctx, q, id)
+	if err := row.Scan(&question); err != nil {
+		_ = tx.Rollback(ctx)
+		return data.Question{}, fmt.Errorf("can't retrieve current question: %v", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return data.Question{}, fmt.Errorf("commit error: %v", err)
+	}
+
+	return question, nil
 }

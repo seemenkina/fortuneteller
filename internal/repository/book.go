@@ -28,7 +28,7 @@ func (bdb bookdb) FindRowInBook(ctx context.Context, book string, row int) (stri
 	var rows []string
 	rawData := bdb.QueryRow(ctx, q, book)
 	if err := rawData.Scan(&rows); err != nil {
-		return "", fmt.Errorf("can't retieve book data: %v", err)
+		return "", fmt.Errorf("can't retrieve book data: %v", err)
 	}
 
 	if len(rows) < row {
