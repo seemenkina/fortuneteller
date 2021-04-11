@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"fortuneteller/internal/data"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Question interface {
 	AddQuestion(ctx context.Context, q data.Question) error
-	FindUserQuestion(ctx context.Context, u data.User) ([]data.Question, error)
+	FindUserQuestion(ctx context.Context, user string) ([]data.Question, error)
 }
 
 type questiondb struct {
@@ -43,6 +44,14 @@ func (qdb questiondb) AddQuestion(ctx context.Context, question data.Question) e
 	return nil
 }
 
-func (qdb questiondb) FindUserQuestion(ctx context.Context, user data.User) ([]data.Question, error) {
-	panic("implement me")
+func (qdb questiondb) FindUserQuestion(ctx context.Context, user string) ([]data.Question, error) {
+	var questions []data.Question
+	const q = `SELECT question_id, question_data, question_answer, question_book, question_owner FROM Questions 
+			WHERE question_owner = ($1::uuid)`
+
+	if err := pgxscan.Select(ctx, qdb, &questions, q, user); err != nil {
+		return nil, fmt.Errorf("can't get all users from DB : %v", err)
+	}
+
+	return questions, nil
 }
