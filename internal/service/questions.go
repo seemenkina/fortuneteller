@@ -1,59 +1,65 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"fortuneteller/internal/crypto"
-	"fortuneteller/internal/models"
+	"fortuneteller/internal/data"
 	"fortuneteller/internal/repository"
+	"github.com/google/uuid"
 )
 
 type QuestionService struct {
-	repoq repository.Question
-	repou repository.User
-	repob repository.Book
-	cryp  crypto.AwesomeCrypto
+	Repoq repository.Question
+	Repou repository.User
+	Repob repository.Book
+	Cryp  crypto.AwesomeCrypto
 }
 
-func (qs QuestionService) AskQuestion(question string, user models.User, book models.BookData) (string, error) {
-	encryptedQuestion, err := qs.cryp.Encrypt([]byte(question))
+func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, book data.BookData) (string, error) {
+	encryptedQuestion, err := qs.Cryp.Encrypt([]byte(question))
 	if err != nil {
 		return "", fmt.Errorf("cant encrypt question : %v", err)
 	}
 
-	answer, err := qs.repob.FindRowInBook(book)
+	answer, err := qs.Repob.FindRowInBook(book)
 	if err != nil {
 		return "", fmt.Errorf("cant find answer : %v", err)
 	}
 
-	q := models.Question{
+	q := data.Question{
+		ID:       uuid.New().String(),
 		Question: string(encryptedQuestion),
 		Answer:   answer,
-		BData:    book,
-		Owner:    user,
+		BData:    book.Name,
+		Owner:    user.ID,
 	}
-	if err := qs.repoq.AddQuestion(q); err != nil {
+	if err := qs.Repoq.AddQuestion(ctx, q); err != nil {
 		return "", fmt.Errorf("cant add question : %v", err)
 	}
 	return answer, nil
 }
 
-func (qs QuestionService) ListUserEncryptedQuestions(username string) ([]models.Question, error) {
-	user, err := qs.repou.FindUserByName(username)
+func (qs QuestionService) ListUserEncryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
+	user, err := qs.Repou.FindUserByName(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("cant list user questions : %v", err)
 	}
-	return qs.repoq.FindUserQuestion(user)
+	return qs.Repoq.FindUserQuestion(ctx, user)
 }
 
-func (qs QuestionService) ListUserDecryptedQuestions(username string) ([]models.Question, error) {
-	user, err := qs.repou.FindUserByName(username)
+func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
+	user, err := qs.Repou.FindUserByName(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("cant list user questions : %v", err)
 	}
-	questions, err := qs.repoq.FindUserQuestion(user)
+	questions, err := qs.Repoq.FindUserQuestion(ctx, user)
+	if questions == nil {
+		return nil, fmt.Errorf("empty questions")
+	}
 	for i, question := range questions {
-		decryptedQuestion, err := qs.cryp.Decrypt([]byte(question.Question))
+		decryptedQuestion, err := qs.Cryp.Decrypt([]byte(question.Question))
 		if err != nil {
 			return nil, fmt.Errorf("cant decrypt question : %v", err)
 		}
@@ -63,6 +69,6 @@ func (qs QuestionService) ListUserDecryptedQuestions(username string) ([]models.
 	return questions, nil
 }
 
-func (qs QuestionService) ListBooks() ([]models.BookData, error) {
-	return qs.repob.ListBooks()
+func (qs QuestionService) ListBooks() ([]data.BookData, error) {
+	return qs.Repob.ListBooks()
 }

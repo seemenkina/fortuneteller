@@ -7,11 +7,13 @@
 <html>
 <head>
     <title>Story by HTML5 UP</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="/static/css/main.css" />
-    <link rel="stylesheet" href="/static/css/hack.css" />
-    <noscript><link rel="stylesheet" href="/static/css/noscript.css" /></noscript>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
+    <link rel="stylesheet" href="/static/css/hack.css"/>
+    <noscript>
+        <link rel="stylesheet" href="/static/css/noscript.css"/>
+    </noscript>
     <style>
         body {
 
@@ -51,10 +53,15 @@
 <script src="/static/js/main.js"></script>
 
 <script>
+    function delete_cookie(name) {
+        document.cookie = name + "=" + ";max-age=0";
+    }
+
     //Using setTimeout to execute a function after 2 seconds.
     setTimeout(function () {
         //Redirect with JavaScript
-        window.location.href= '/homepage';
+        delete_cookie("tokencookie");
+        window.location.href = '/cuteregister';
     }, 2000);
 </script>
 

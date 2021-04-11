@@ -7,11 +7,13 @@
 <html>
 <head>
     <title>Story by HTML5 UP</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="/static/css/main.css" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
     <link rel="stylesheet" href="/static/css/hack.css"/>
-    <noscript><link rel="stylesheet" href="/static/css/noscript.css" /></noscript>
+    <noscript>
+        <link rel="stylesheet" href="/static/css/noscript.css"/>
+    </noscript>
     <style>
         body {
             /*color: #ffffff;*/
@@ -36,26 +38,10 @@
 <div id="wrapper" class="divided">
 
     <!-- One -->
-    <section class="banner style1 orient-left content-align-left fullscreen onload-image-fade-in onload-content-fade-right">
+    <section
+            class="banner style1 orient-left content-align-left fullscreen onload-image-fade-in onload-content-fade-right">
         <div class="content banner style2 content-align-center orient-center">
-            <ul class="alt layer " style="font-weight: bold;">
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-                <li>This person ask me some question</li>
-            </ul>
+            <ul id="list" class="alt layer " style="font-weight: bold;"></ul>
         </div>
         <div class="content">
             <h1>Home Page</h1>
@@ -81,5 +67,28 @@
 <script src="/static/js/util.js"></script>
 <script src="/static/js/main.js"></script>
 
+<script>
+    $(document).ready(function () {
+        $.ajax({
+            url: '/api/v1/users',
+            type: 'get',
+            dataType: 'json',
+            success: function (data) {
+                console.log(data);
+                data["users"].forEach(function(element){
+                    // console.log(element);
+                    $("#list").append(
+                        $(`
+                            <li>${element}</li>
+                        `)
+                    )
+                });
+            },
+            error: function (data) {
+                console.log(data)
+            }
+        });
+    })
+</script>
 </body>
 </html>

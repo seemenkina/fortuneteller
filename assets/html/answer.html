@@ -54,9 +54,26 @@
 <script src="/static/js/main.js"></script>
 
 <script>
+
     $(document).ready(function () {
-        $('#question').text("Nice user question")
-        $('#answer').text("Nice answer")
+        $.ajax({
+            url: '/api/v1/users/questions/answer',
+            type: 'get',
+            dataType: 'json',
+            data: {
+                "id" : window.location.hash.slice(1),
+            },
+            success: function (data) {
+                console.log(data);
+                console.log(window.location.hash.slice(1))
+                $('#question').text(data["Question"]);
+                $('#answer').text(data["Answer"]);
+            },
+            error: function (data) {
+                console.log(data)
+            }
+
+        })
     })
 </script>
 
