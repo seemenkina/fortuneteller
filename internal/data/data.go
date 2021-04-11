@@ -7,10 +7,10 @@ type User struct {
 }
 
 type Book struct {
-	ID   string `db:"book_id"`
-	Name string `db:"book_name"`
-	Rows int    `db:"book_len"`
-	Data string `db:"book_data"`
+	ID   string   `db:"book_id"`
+	Name string   `db:"book_name"`
+	Rows int      `db:"book_len"`
+	Data []string `db:"book_data"`
 }
 
 type Question struct {
