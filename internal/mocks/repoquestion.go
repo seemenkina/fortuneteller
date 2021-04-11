@@ -1,20 +1,22 @@
 package mocks
 
 import (
-	"fortuneteller/internal/models"
+	"context"
+
+	"fortuneteller/internal/data"
 )
 
-type QuestionMock []models.Question
+type QuestionMock []data.Question
 
-func (q *QuestionMock) AddQuestion(question models.Question) error {
+func (q *QuestionMock) AddQuestion(ctx context.Context, question data.Question) error {
 	*q = append(*q, question)
 	return nil
 }
 
-func (q *QuestionMock) FindUserQuestion(user models.User) ([]models.Question, error) {
-	var questions []models.Question
+func (q *QuestionMock) FindUserQuestion(ctx context.Context, user data.User) ([]data.Question, error) {
+	var questions []data.Question
 	for _, question := range *q {
-		if question.Owner == user {
+		if question.Owner == user.ID {
 			questions = append(questions, question)
 		}
 	}

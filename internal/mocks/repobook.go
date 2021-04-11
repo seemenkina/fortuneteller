@@ -3,7 +3,7 @@ package mocks
 import (
 	"fmt"
 
-	"fortuneteller/internal/models"
+	"fortuneteller/internal/data"
 )
 
 const BookName = "Great Book"
@@ -20,7 +20,7 @@ func NewBookMock() BookMock {
 	}
 }
 
-func (b BookMock) FindRowInBook(book models.BookData) (string, error) {
+func (b BookMock) FindRowInBook(book data.BookData) (string, error) {
 	strs, ok := b[book.Name]
 	if !ok {
 		return "", fmt.Errorf("no such book")
@@ -31,10 +31,10 @@ func (b BookMock) FindRowInBook(book models.BookData) (string, error) {
 	return strs[book.Row], nil
 }
 
-func (b BookMock) ListBooks() ([]models.BookData, error) {
-	var books []models.BookData
+func (b BookMock) ListBooks() ([]data.BookData, error) {
+	var books []data.BookData
 	for name, row := range b {
-		books = append(books, models.BookData{
+		books = append(books, data.BookData{
 			Name: name,
 			Row:  len(row),
 		})

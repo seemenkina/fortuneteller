@@ -1,4 +1,4 @@
 .idea
-internal/mocks
+internal/mocks/
 internal/service/questions_test.go
 internal/service/users_test.go
