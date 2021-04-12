@@ -7,22 +7,15 @@
 </head>
 <style>
     .page {
-        /*color: #ffffff;*/
-        /*background: rgba(252, 252, 252, 0.7) url("https://live.staticflickr.com/2521/4198754159_cb8a1d7dae_k.jpg") no-repeat;*/
-
         background: url("/static/images/black-map.jpg") no-repeat;
         height: 100%; /* Высота страницы */
         width: 100%;
-        /*position: ;*/
         background-size: cover;
     }
 </style>
 
 <body>
-<div id="back" class="page">
-    <!--        <div class="backRight"></div>-->
-    <!--        <div class="backLeft"></div>-->
-</div>
+<div id="back" class="page"></div>
 
 <div id="slideBox">
     <div class="topLayer">
@@ -55,6 +48,8 @@
 </body>
 
 <script src="/static/js/jquery-3.6.0.min.js"></script>
+<script src="/static/js/hacks.js"></script>
+
 <script type="text/javascript">
     $(document).ready(function () {
         $('#goRight').on('click', function () {
@@ -81,9 +76,11 @@
                 data: $('#register-form').serialize(),
                 success: function (data) {
                     console.log(data)
+                    localStorage.setItem('username', data['username'])
                     window.location = data['redirect']
                 },
                 error: function (data) {
+                    alertFunction("User already exists")
                     console.log(data)
                 }
             });
@@ -96,7 +93,12 @@
                 data: $('#login-form').serialize(),
                 success: function (data) {
                     console.log(data)
+                    localStorage.setItem('username', data['username'])
                     window.location = data['redirect']
+                },
+                error: function (data) {
+                    alertFunction("Invalid token or no such user")
+                    console.log(data)
                 }
             });
         });

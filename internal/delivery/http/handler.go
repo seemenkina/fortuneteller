@@ -60,6 +60,7 @@ func (usersubrouter UserSubrouter) HandlerRegisterPost(w http.ResponseWriter, r 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		// "msg":      fmt.Sprintf("Hey, you are register %s, your token : %s\n", username, token),
 		"redirect": "/register#" + token,
+		"username": username,
 	})
 
 }
@@ -82,7 +83,7 @@ func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *ht
 		return
 	}
 	log.Printf("token: %s\n", token)
-	_, err = usersubrouter.UserService.Login(r.Context(), token)
+	user, err := usersubrouter.UserService.Login(r.Context(), token)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -102,6 +103,7 @@ func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *ht
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"redirect": "/homepage",
+		"username": user.Username,
 	})
 
 }
@@ -128,6 +130,17 @@ func (usersubrouter UserSubrouter) HandlerListsUser(w http.ResponseWriter, r *ht
 }
 
 func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("users questions error: %v", err),
+		})
+		return
+	}
+	name := r.Form.Get("username")
+	log.Printf("USERNAME: %s", name)
+
 	cookie, err := r.Cookie("tokencookie")
 	if cookie.Value == "" {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -136,8 +149,7 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 		})
 		return
 	}
-	log.Printf("THIS %s", cookie.Value)
-	name, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	cookiename, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -145,16 +157,27 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 		})
 		return
 	}
-	log.Printf("UNAME %s", name)
+	log.Printf("USERNAME FROM COOKIE: %s", cookiename)
 
-	// TODO: различать текущего пользователя и пользователя для которого запрашивают вопросы
-	questions, err := usersubrouter.QuestionService.ListUserDecryptedQuestions(r.Context(), name)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("list users error: %v", err),
-		})
-		return
+	var questions []data.Question
+	if name == "" || cookiename == name {
+		questions, err = usersubrouter.QuestionService.ListUserDecryptedQuestions(r.Context(), cookiename)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": fmt.Sprintf("list users error: %v", err),
+			})
+			return
+		}
+	} else {
+		questions, err = usersubrouter.QuestionService.ListUserEncryptedQuestions(r.Context(), name)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": fmt.Sprintf("list users error: %v", err),
+			})
+			return
+		}
 	}
 
 	answer := make([]struct {
@@ -166,15 +189,6 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 		answer[i].Answer = q.Answer
 		answer[i].Question = q.Question
 	}
-	// json.NewEncoder(w).Encode(map[string]interface{}{
-	// 	"questions": []struct {
-	// 		Question string
-	// 		Answer   string
-	// 	}{
-	// 		{"one", "teo"},
-	// 		{"two", "deo"},
-	// 	},
-	// })
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"questions": answer,
