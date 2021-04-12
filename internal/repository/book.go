@@ -1,70 +1,95 @@
 package repository
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"fortuneteller/internal/data"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Book interface {
 	FindRowInBook(ctx context.Context, book string, row int) (string, error)
 	ListBooks(ctx context.Context) ([]data.Book, error)
-	AddBook(ctx context.Context, book data.Book) error
 }
 
-type bookdb struct {
-	*pgxpool.Pool
+type bookfs struct {
+	Path string
 }
 
-func NewBookInterface(db *pgxpool.Pool) Book {
-	return &bookdb{db}
-}
+func NewBookFileSystem(path string) Book {
 
-func (bdb bookdb) FindRowInBook(ctx context.Context, book string, row int) (string, error) {
-	const q = `SELECT book_data FROM Books WHERE book_name = $1`
-	var rows []string
-	rawData := bdb.QueryRow(ctx, q, book)
-	if err := rawData.Scan(&rows); err != nil {
-		return "", fmt.Errorf("can't retrieve book data: %v", err)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModeDir)
 	}
-
-	if len(rows) < row {
-		return "", fmt.Errorf("can't find row in book")
-	}
-	return rows[row], nil
+	return &bookfs{Path: path}
 }
 
-func (bdb bookdb) ListBooks(ctx context.Context) ([]data.Book, error) {
+func (bfs bookfs) FindRowInBook(ctx context.Context, book string, row int) (string, error) {
+	filename := filepath.Join(bfs.Path, book+".txt")
+	f, err := os.Open(filename)
+	if err != nil {
+		return "", fmt.Errorf("can't open file %s : %v", book, err)
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	scanner := bufio.NewScanner(f)
+	result := 0
+	str := ""
+	for scanner.Scan() {
+		if result == row {
+			str = scanner.Text()
+			break
+		}
+		result++
+	}
+	if scanner.Err() != nil {
+		return "", fmt.Errorf("scanner error: %v", err)
+	}
+	return str, f.Close()
+}
+
+func (bfs bookfs) ListBooks(ctx context.Context) ([]data.Book, error) {
+	files, err := ioutil.ReadDir(bfs.Path)
+	if err != nil {
+		return nil, fmt.Errorf("can't open books directory: %v", err)
+	}
 	var books []data.Book
-	const q = `SELECT * FROM Books`
-
-	if err := pgxscan.Select(ctx, bdb, &books, q); err != nil {
-		return nil, fmt.Errorf("can't get all books from DB : %v", err)
+	for _, f := range files {
+		// fmt.Println(f.Name())
+		fname := f.Name()
+		lenf := len(fname) - len(filepath.Ext(fname))
+		// fmt.Printf("l: %d", lenf)
+		books = append(books, data.Book{
+			Name: fname[:lenf],
+			Rows: rowsInFile(filepath.Join(bfs.Path, f.Name())),
+		})
 	}
-
-	return books, nil
+	return books, err
 }
 
-func (bdb bookdb) AddBook(ctx context.Context, book data.Book) error {
-	tx, err := bdb.Begin(ctx)
+func rowsInFile(filename string) int {
+	f, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("can't start a transaction: %v", err)
+		return -1
 	}
-
-	const q = `INSERT INTO Books (book_id, book_name, book_len, book_data)
-				VALUES ($1, $2, $3, $4)`
-
-	_, err = tx.Exec(ctx, q, book.ID, book.Name, book.Rows, book.Data)
-	if err != nil {
-		_ = tx.Rollback(ctx)
-		return fmt.Errorf("can't insert new book: %v", err)
+	defer func() {
+		_ = f.Close()
+	}()
+	// Create new Scanner.
+	scanner := bufio.NewScanner(f)
+	result := 0
+	for scanner.Scan() {
+		result++
 	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit error: %v", err)
+	if scanner.Err() != nil {
+		return -1
 	}
-	return nil
+	_ = f.Close()
+	return result
 }
