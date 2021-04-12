@@ -77,12 +77,12 @@
         )
     }
 
-    addArticle("/static/images/book3.jpg", "xuy", 90)
-    addArticle("/static/images/book2.jpg", "xuy", 52)
-    addArticle("/static/images/book1.jpg", "xuy", 15)
-    addArticle("/static/images/book3.jpg", "xuy", 52)
-    addArticle("/static/images/book2.jpg", "xuy", 52)
-    addArticle("/static/images/book2.jpg", "xuy", 52)
+    // addArticle("/static/images/book3.jpg", "xuy", 90)
+    // addArticle("/static/images/book2.jpg", "xuy", 52)
+    // addArticle("/static/images/book1.jpg", "xuy", 15)
+    // addArticle("/static/images/book3.jpg", "xuy", 52)
+    // addArticle("/static/images/book2.jpg", "xuy", 52)
+    // addArticle("/static/images/book2.jpg", "xuy", 52)
 </script>
 
 <script src="/static/js/browser.min.js"></script>
@@ -96,6 +96,23 @@
 
 <script lang="JavaScript">
     $(document).ready(function () {
+        $.ajax({
+            url: '/api/v1/users/questions/ask',
+            type: 'get',
+            dataType: 'json',
+            success: function (data) {
+                console.log(data);
+                data["books"].forEach(function(element){
+                    // console.log(element);
+                    addArticle("/static/images/book2.jpg", element["Name"], element["Rows"])
+                });
+            },
+            error: function (data) {
+                console.log(data)
+            }
+        });
+
+
         $('article').click(ev => {
             $('article>img').removeClass("stylebook")
             $(ev.target).addClass("stylebook")
@@ -107,9 +124,7 @@
             $('#box-range').val(this.value);
         }).trigger("change");
 
-
         $('#ask').click(function() {
-
             $.ajax({
                 url: '/api/v1/users/questions/ask',
                 type: 'post',

@@ -106,7 +106,7 @@ func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *ht
 
 }
 
-func (usersubrouter UserSubrouter) HandlerUsersGet(w http.ResponseWriter, r *http.Request) {
+func (usersubrouter UserSubrouter) HandlerListsUser(w http.ResponseWriter, r *http.Request) {
 	users, err := usersubrouter.UserService.ListUsers(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -263,7 +263,7 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 	log.Printf(r.Form.Get("question"), r.Form.Get("book"), r.Form.Get("page"))
 
 	row, err := strconv.Atoi(r.Form.Get("page"))
-	bookData := data.BookData{
+	bookData := data.FromAskData{
 		Name: r.Form.Get("book"),
 		Row:  row,
 	}
@@ -281,4 +281,18 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 		"redirect": "/answer#" + question.ID,
 	})
 
+}
+
+func (usersubrouter UserSubrouter) HandlerListBooks(w http.ResponseWriter, r *http.Request) {
+	books, err := usersubrouter.QuestionService.Repob.ListBooks(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("list books error: %v", err),
+		})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"books": books,
+	})
 }

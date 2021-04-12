@@ -18,7 +18,7 @@ type QuestionService struct {
 	Cryp  crypto.AwesomeCrypto
 }
 
-func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, book data.BookData) (data.Question, error) {
+func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, book data.FromAskData) (data.Question, error) {
 	encryptedQuestion, err := qs.Cryp.Encrypt([]byte(question))
 	if err != nil {
 		return data.Question{}, fmt.Errorf("cant encrypt question : %v", err)

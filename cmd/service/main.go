@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -18,6 +19,9 @@ import (
 )
 
 func main() {
+	exe, err := os.Executable()
+	dir := filepath.Dir(exe)
+
 	router := mux.NewRouter()
 	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
 
@@ -46,7 +50,7 @@ func main() {
 	var questionService = &service.QuestionService{
 		Repoq: repository.NewQuestionInterface(rawDBConn),
 		Repou: userService.Repo,
-		Repob: repository.NewBookInterface(rawDBConn),
+		Repob: repository.NewBookFileSystem(filepath.Join(dir, "books")),
 		Cryp: crypto.IzzyWizzy{
 			Key: []byte(key),
 		},
@@ -86,10 +90,11 @@ func main() {
 	apiRouter.HandleFunc("/auth/register", us.HandlerRegisterPost).Methods("POST")
 	apiRouter.HandleFunc("/auth/login", us.HandlerLoginPost).Methods("POST")
 
-	apiRouter.HandleFunc("/users", us.HandlerUsersGet).Methods("GET")
+	apiRouter.HandleFunc("/users", us.HandlerListsUser).Methods("GET")
 	apiRouter.HandleFunc("/users/questions", us.HandlerUserQuestionsGet).Methods("GET")
 	apiRouter.HandleFunc("/users/questions/answer", us.HandlerAnswerGet).Methods("GET")
 	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestionPost).Methods("POST")
+	apiRouter.HandleFunc("/users/questions/ask", us.HandlerListBooks).Methods("GET")
 
 	err = http.ListenAndServe(":8080", router)
 	if err != nil {
