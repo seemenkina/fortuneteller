@@ -7,11 +7,13 @@
 <html>
 <head>
     <title>Story by HTML5 UP</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="/static/css/main.css" />
-    <link rel="stylesheet" href="/static/css/hack.css" />
-    <noscript><link rel="stylesheet" href="/static/css/noscript.css" /></noscript>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
+    <link rel="stylesheet" href="/static/css/hack.css"/>
+    <noscript>
+        <link rel="stylesheet" href="/static/css/noscript.css"/>
+    </noscript>
     <style>
         body {
 
@@ -33,7 +35,7 @@
             <h1>You are awesome!</h1>
             <h2>Here, your token: <span id="token"></span></h2>
             <ul class="actions stacked fit">
-                <li><a class="button styleb fit">Copy your token</a></li>
+                <li><a id="copybutton" class="button styleb fit">Copy your token</a></li>
                 <li><a href="/homepage" class="button styleb fit">Go to magic</a></li>
             </ul>
         </div>
@@ -50,10 +52,24 @@
 <script src="/static/js/breakpoints.min.js"></script>
 <script src="/static/js/util.js"></script>
 <script src="/static/js/main.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
 <script>
+    function copyToClipboard(element) {
+        let $temp = $("<input>");
+        $("body").append($temp);
+        $temp.val($(element).text()).select();
+        document.execCommand("copy");
+        $temp.remove();
+    }
+
     $(document).ready(function () {
         $('#token').text(window.location.hash.slice(1))
+
+        $('#copybutton').click(function () {
+           copyToClipboard($('#token'))
+        });
+
     })
 </script>
 
