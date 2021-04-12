@@ -7,6 +7,22 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+func Migrate(ctx context.Context, conn *pgxpool.Pool) (*pgxpool.Pool, error) {
+	var err error
+	conn, err = createUserTable(ctx, conn)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("can't create user table: %v", err)
+	}
+
+	conn, err = createQuestionsTable(ctx, conn)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("can't create questions table: %v", err)
+	}
+	return conn, err
+}
+
 func createUserTable(ctx context.Context, conn *pgxpool.Pool) (*pgxpool.Pool, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -48,29 +64,6 @@ func createQuestionsTable(ctx context.Context, conn *pgxpool.Pool) (*pgxpool.Poo
 	if _, err := tx.Exec(ctx, q); err != nil {
 		_ = tx.Rollback(ctx)
 		return nil, fmt.Errorf("can't create questions table: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit error: %v", err)
-	}
-	return conn, err
-}
-
-func createBooksTable(ctx context.Context, conn *pgxpool.Pool) (*pgxpool.Pool, error) {
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("can't start a transaction: %v", err)
-	}
-
-	const q = `CREATE TABLE if not exists Books (
-	book_id UUID NOT NULL PRIMARY KEY, 
-	book_name TEXT,
-	book_len INTEGER,
-	book_data TEXT[] DEFAULT '{}'::TEXT[]);`
-
-	if _, err := tx.Exec(ctx, q); err != nil {
-		_ = tx.Rollback(ctx)
-		return nil, fmt.Errorf("can't create books table: %v", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -27,5 +28,9 @@ func Open(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 		RawQuery: q.Encode(),
 	}
 
-	return pgxpool.Connect(ctx, u.String())
+	poolconn, err := pgxpool.Connect(ctx, u.String())
+	if err != nil {
+		return nil, fmt.Errorf("can't connect to pgxpool: %v", poolconn)
+	}
+	return Migrate(ctx, poolconn)
 }

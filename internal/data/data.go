@@ -7,10 +7,8 @@ type User struct {
 }
 
 type Book struct {
-	ID   string   `db:"book_id"`
-	Name string   `db:"book_name"`
-	Rows int      `db:"book_len"`
-	Data []string `db:"book_data"`
+	Name string
+	Rows int
 }
 
 type Question struct {
@@ -21,7 +19,7 @@ type Question struct {
 	Owner    string `db:"question_owner"`
 }
 
-type BookData struct {
+type FromAskData struct {
 	Name string
 	Row  int
 }
