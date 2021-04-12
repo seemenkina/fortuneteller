@@ -46,7 +46,7 @@ func (qs QuestionService) AskQuestion(ctx context.Context, question string, user
 func (qs QuestionService) ListUserEncryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
 	user, err := qs.Repou.FindUserByName(ctx, username)
 	if err != nil {
-		return nil, fmt.Errorf("cant list user questions : %v", err)
+		return nil, fmt.Errorf("can't find user by name %s : %v", username, err)
 	}
 	return qs.Repoq.FindUserQuestion(ctx, user.ID)
 }
@@ -54,7 +54,7 @@ func (qs QuestionService) ListUserEncryptedQuestions(ctx context.Context, userna
 func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
 	user, err := qs.Repou.FindUserByName(ctx, username)
 	if err != nil {
-		return nil, fmt.Errorf("cant list user questions : %v", err)
+		return nil, fmt.Errorf("can't find user by name %s : %v", username, err)
 	}
 	questions, err := qs.Repoq.FindUserQuestion(ctx, user.ID)
 	if questions == nil {
@@ -78,11 +78,11 @@ func (qs QuestionService) ListBooks(ctx context.Context) ([]data.Book, error) {
 func (qs QuestionService) FindUserQuestionByID(ctx context.Context, id string, username string) (data.Question, error) {
 	question, err := qs.Repoq.FindQuestionByID(ctx, id)
 	if err != nil {
-		return data.Question{}, fmt.Errorf("can't find question")
+		return data.Question{}, fmt.Errorf("can't find question: %v", err)
 	}
 	user, err := qs.Repou.FindUserByName(ctx, username)
 	if err != nil {
-		return data.Question{}, fmt.Errorf("can't find user")
+		return data.Question{}, fmt.Errorf("can't find user by name %s : %v", username, err)
 	}
 	if question.Owner == user.ID {
 		b, err := qs.Cryp.Decrypt([]byte(question.Question))

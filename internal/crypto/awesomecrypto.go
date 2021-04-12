@@ -3,6 +3,7 @@ package crypto
 import (
 	"bytes"
 	"crypto/aes"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -29,10 +30,14 @@ func (iwcrypto IzzyWizzy) Encrypt(plaintext []byte) ([]byte, error) {
 	for bs, be := 0, aes.BlockSize; bs < len(plaintext); bs, be = bs+aes.BlockSize, be+aes.BlockSize {
 		cipher.Encrypt(ciphertext[bs:be], plaintext[bs:be])
 	}
-	return ciphertext, nil
+	return []byte(hex.EncodeToString(ciphertext)), nil
 }
 
 func (iwcrypto IzzyWizzy) Decrypt(ciphertext []byte) ([]byte, error) {
+	ciphertext, err := hex.DecodeString(string(ciphertext))
+	if err != nil {
+		return nil, fmt.Errorf("can't decode ciphertext: %v", err)
+	}
 	cipher, err := aes.NewCipher(iwcrypto.Key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new cipher: %s", err)

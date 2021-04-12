@@ -30,7 +30,7 @@ func main() {
 	rawDBConn, err := data.Open(ctx, data.Config{
 		User:         "admin",
 		Password:     "123456",
-		Host:         "localhost",
+		Host:         "database",
 		DatabaseName: "pgdb",
 		DisableTLS:   "disable",
 	})

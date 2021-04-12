@@ -77,6 +77,31 @@
         )
     }
 
+    $(document).ready(function () {
+        $.ajax({
+            url: '/api/v1/users/questions/ask',
+            type: 'get',
+            dataType: 'json',
+            success: function (data) {
+                console.log(data);
+                data["books"].forEach(function (element) {
+                    console.log(element);
+                    addArticle("/static/images/book2.jpg", element["Name"], element["Rows"])
+                });
+
+                $('article').click(ev => {
+                    $('article>img').removeClass("stylebook")
+                    $(ev.target).addClass("stylebook")
+                    $("#volume-control").attr("max", $(ev.target).attr("x-len"))
+                    $("#volume-control").val($("#volume-control").attr("max") / 2).trigger("input")
+                });
+            },
+            error: function (data) {
+                console.log(data)
+            }
+        });
+    });
+
     // addArticle("/static/images/book3.jpg", "xuy", 90)
     // addArticle("/static/images/book2.jpg", "xuy", 52)
     // addArticle("/static/images/book1.jpg", "xuy", 15)
@@ -96,31 +121,7 @@
 
 <script lang="JavaScript">
     $(document).ready(function () {
-        $.ajax({
-            url: '/api/v1/users/questions/ask',
-            type: 'get',
-            dataType: 'json',
-            success: function (data) {
-                console.log(data);
-                data["books"].forEach(function(element){
-                    // console.log(element);
-                    addArticle("/static/images/book2.jpg", element["Name"], element["Rows"])
-                });
-            },
-            error: function (data) {
-                console.log(data)
-            }
-        });
-
-
-        $('article').click(ev => {
-            $('article>img').removeClass("stylebook")
-            $(ev.target).addClass("stylebook")
-            $("#volume-control").attr("max", $(ev.target).attr("x-len"))
-            $("#volume-control").val($("#volume-control").attr("max") / 2).trigger("input")
-        });
-
-        $('#volume-control').on("input", function () {
+       $('#volume-control').on("input", function () {
             $('#box-range').val(this.value);
         }).trigger("change");
 

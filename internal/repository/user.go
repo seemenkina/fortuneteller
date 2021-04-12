@@ -60,69 +60,39 @@ func (udb userdb) AllUsers(ctx context.Context) ([]data.User, error) {
 }
 
 func (udb userdb) FindUserByName(ctx context.Context, name string) (data.User, error) {
-	tx, err := udb.Begin(ctx)
-	if err != nil {
-		return data.User{}, fmt.Errorf("can't start a transaction: %v", err)
-	}
-
 	const q = `SELECT user_id, user_name, user_token FROM Users
 				WHERE user_name = $1`
 
 	var user data.User
-	row := tx.QueryRow(ctx, q, name)
-	if err := row.Scan(&user); err != nil {
-		_ = tx.Rollback(ctx)
-		return data.User{}, fmt.Errorf("can't retrieve current user: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return data.User{}, fmt.Errorf("commit error: %v", err)
+	row := udb.QueryRow(ctx, q, name)
+	if err := row.Scan(&user.ID, &user.Username, &user.Token); err != nil {
+		return data.User{}, ErrNoSuchUser
 	}
 
 	return user, nil
 }
 
 func (udb userdb) FindUserByToken(ctx context.Context, token string) (data.User, error) {
-	tx, err := udb.Begin(ctx)
-	if err != nil {
-		return data.User{}, fmt.Errorf("can't start a transaction: %v", err)
-	}
-
 	const q = `SELECT user_id, user_name, user_token FROM Users
 				WHERE user_token = $1`
 
 	var user data.User
-	row := tx.QueryRow(ctx, q, token)
-	if err := row.Scan(&user); err != nil {
-		_ = tx.Rollback(ctx)
-		return data.User{}, fmt.Errorf("can't retrieve current user: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return data.User{}, fmt.Errorf("commit error: %v", err)
+	row := udb.QueryRow(ctx, q, token)
+	if err := row.Scan(&user.ID, &user.Username, &user.Token); err != nil {
+		return data.User{}, ErrNoSuchUser
 	}
 
 	return user, nil
 }
 
 func (udb userdb) FindUserByID(ctx context.Context, id string) (data.User, error) {
-	tx, err := udb.Begin(ctx)
-	if err != nil {
-		return data.User{}, fmt.Errorf("can't start a transaction: %v", err)
-	}
-
 	const q = `SELECT user_id, user_name, user_token FROM Users
 				WHERE user_id = $1`
 
 	var user data.User
-	row := tx.QueryRow(ctx, q, id)
-	if err := row.Scan(&user); err != nil {
-		_ = tx.Rollback(ctx)
-		return data.User{}, fmt.Errorf("can't retrieve current user: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return data.User{}, fmt.Errorf("commit error: %v", err)
+	row := udb.QueryRow(ctx, q, id)
+	if err := row.Scan(&user.ID, &user.Username, &user.Token); err != nil {
+		return data.User{}, ErrNoSuchUser
 	}
 
 	return user, nil

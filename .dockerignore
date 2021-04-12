@@ -1,0 +1,7 @@
+# .dockerignore
+
+assets
+books
+dbdata
+.gitginore
+fortuneteller

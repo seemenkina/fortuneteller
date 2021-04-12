@@ -55,7 +55,7 @@ func createQuestionsTable(ctx context.Context, conn *pgxpool.Pool) (*pgxpool.Poo
 	question_id UUID NOT NULL PRIMARY KEY, 
 	question_data TEXT,
 	question_answer TEXT,
-	question_book TEXT
+	question_book TEXT,
 	question_owner UUID,
 	CONSTRAINT fk_owner
 		FOREIGN KEY (question_owner)

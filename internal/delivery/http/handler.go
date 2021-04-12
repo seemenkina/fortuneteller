@@ -86,7 +86,7 @@ func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *ht
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("register error: %v", err),
+			"error": fmt.Sprintf("login error: %v", err),
 		})
 		return
 	}
@@ -235,19 +235,11 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 		})
 		return
 	}
-	name, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	user, err := usersubrouter.UserService.Repo.FindUserByToken(r.Context(), cookie.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("cant get username by token: %v", err),
-		})
-		return
-	}
-	user, err := usersubrouter.UserService.Repo.FindUserByName(r.Context(), name)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("cant get user by username: %v", err),
+			"error": fmt.Sprintf("cant get user by token: %v", err),
 		})
 		return
 	}
@@ -268,7 +260,7 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 		Row:  row,
 	}
 	question, err := usersubrouter.QuestionService.AskQuestion(
-		r.Context(), r.Form.Get("question"), user, bookData)
+		r.Context(), r.Form.Get("question")[9:], user, bookData)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
