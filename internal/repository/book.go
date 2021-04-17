@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -30,14 +31,14 @@ func NewBookFileSystem(path string) Book {
 	books := make(map[string]crypto.AwesomeCrypto, len(files))
 	for _, f := range files {
 		fname := f.Name()
-		lenf := len(fname) - len(filepath.Ext(fname))
-		books[fname[:lenf]] = crypto.GenerateKeyPair()
+		books[fname] = crypto.GenerateKeyPair()
 	}
 	return &bookfs{Path: path, BookKey: books}
 }
 
 func (bfs bookfs) FindRowInBook(book string, row int) (string, error) {
-	filename := filepath.Join(bfs.Path, book+".txt")
+	filename := filepath.Join(bfs.Path, book)
+	log.Printf("FIND ROW %d in %s", row, filename)
 	f, err := os.Open(filename)
 	if err != nil {
 		return "", fmt.Errorf("can't open file %s : %v", book, err)
@@ -46,6 +47,9 @@ func (bfs bookfs) FindRowInBook(book string, row int) (string, error) {
 		_ = f.Close()
 	}()
 
+	if rowsInFile(filename) < row {
+		return "", fmt.Errorf("row in books must be greater or equal then find row")
+	}
 	scanner := bufio.NewScanner(f)
 	result := 0
 	str := ""
@@ -56,6 +60,7 @@ func (bfs bookfs) FindRowInBook(book string, row int) (string, error) {
 		}
 		result++
 	}
+	log.Printf("ROW %d IN %s : %s", result, filename, str)
 	if scanner.Err() != nil {
 		return "", fmt.Errorf("scanner error: %v", err)
 	}
@@ -71,11 +76,10 @@ func (bfs bookfs) ListBooks() ([]data.Book, error) {
 	for _, f := range files {
 		// fmt.Println(f.Name())
 		fname := f.Name()
-		lenf := len(fname) - len(filepath.Ext(fname))
 		// fmt.Printf("l: %d", lenf)
 		books = append(books, data.Book{
-			Name: fname[:lenf],
-			Rows: rowsInFile(filepath.Join(bfs.Path, f.Name())),
+			Name: fname,
+			Rows: rowsInFile(filepath.Join(bfs.Path, fname)),
 		})
 	}
 	return books, err

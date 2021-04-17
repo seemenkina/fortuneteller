@@ -136,7 +136,7 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 			return
 		}
 	} else {
-		questions, err = usersubrouter.QuestionService.ListUserEncryptedQuestions(r.Context(), usernameFromCookie)
+		questions, err = usersubrouter.QuestionService.ListUserEncryptedQuestions(r.Context(), username)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "unable to return encrypted user questions: %v", err)
 			return
@@ -227,7 +227,7 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 		return
 	}
 
-	log.Printf("QUESTION ID : %v", r.URL.Query().Get("id"))
+	log.Printf("OTHER QUESTION ID : %v, %v", r.URL.Query().Get("id"), r.URL.Query().Get("id_book"))
 
 	question, err := usersubrouter.QuestionService.FindUserQuestionByID(r.Context(),
 		r.URL.Query().Get("id"), usernameFromCookie)
@@ -235,6 +235,8 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 		writeError(w, http.StatusInternalServerError, "unable to get question by id: %v", err)
 		return
 	}
+
+	log.Print("OTHER "+r.Form.Get("id_book"), r.Form.Get("book"))
 
 	otherAnswer, err := usersubrouter.QuestionService.AskQuestionFromAnotherBook(r.Context(),
 		question, usernameFromCookie, r.URL.Query().Get("id_book"))

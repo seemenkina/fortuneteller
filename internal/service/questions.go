@@ -128,6 +128,7 @@ func (qs QuestionService) AskQuestionFromAnotherBook(ctx context.Context,
 	// Find row in new book for question from request
 	bookData := strings.Split(question.BData, ":")
 	if bookData[0] == bookname {
+		log.Printf("THIS BOOK EQUAL: %s, %s", bookData[0], bookname)
 		return question, nil
 	}
 	row, _ := strconv.Atoi(bookData[1])
@@ -139,7 +140,7 @@ func (qs QuestionService) AskQuestionFromAnotherBook(ctx context.Context,
 	if usernameFromCookie == questionOwner.Username {
 		return data.Question{
 			Question: question.Question,
-			Answer:   question.Answer,
+			Answer:   answer,
 		}, nil
 	} else {
 		// return encrypted question

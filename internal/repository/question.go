@@ -52,7 +52,9 @@ func (qdb questiondb) FindUserQuestion(ctx context.Context, user string) ([]data
 	if err := pgxscan.Select(ctx, qdb, &questions, q, user); err != nil {
 		return nil, fmt.Errorf("can't get all users from DB : %v", err)
 	}
-
+	if len(questions) == 0 {
+		return nil, fmt.Errorf("empty questions list")
+	}
 	return questions, nil
 }
 

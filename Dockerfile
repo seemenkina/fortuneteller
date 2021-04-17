@@ -1,6 +1,7 @@
 FROM golang:alpine AS builder
 WORKDIR /app
 COPY ./ ./
+VOLUME ["/go", "/root/.cache"]
 RUN go build -o fortuneteller ./cmd/service
 
 FROM alpine:latest

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"log"
 	"net/http"
 	"os"
@@ -22,7 +23,7 @@ func main() {
 	dir := filepath.Dir(exe)
 
 	router := mux.NewRouter()
-	// key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
+	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
 
 	ctx := context.Background()
 
@@ -43,8 +44,10 @@ func main() {
 	}()
 
 	var userService = &service.UserService{
-		Repo:  repository.NewUserInterface(rawDBConn),
-		Token: crypto.MumboJumbo{},
+		Repo: repository.NewUserInterface(rawDBConn),
+		Token: crypto.MumboJumbo{
+			Key: []byte(key),
+		},
 	}
 	var questionService = &service.QuestionService{
 		Repoq: repository.NewQuestionInterface(rawDBConn),
