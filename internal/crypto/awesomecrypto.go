@@ -1,10 +1,10 @@
 package crypto
 
 import (
-	"bytes"
-	"crypto/aes"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 )
 
 type AwesomeCrypto interface {
@@ -12,25 +12,56 @@ type AwesomeCrypto interface {
 	Decrypt(ciphertext []byte) ([]byte, error)
 }
 
+type PublicKey struct {
+	Exp *big.Int
+	Mod *big.Int
+}
+
+type PrivateKey struct {
+	exp *big.Int
+	mod *big.Int
+}
+
 type IzzyWizzy struct {
-	Key []byte
+	PublicKey  PublicKey
+	privateKey PrivateKey
+}
+
+const bits = 200
+
+func GenerateKeyPair() IzzyWizzy {
+	e := big.NewInt(3)
+	p, _ := rand.Prime(rand.Reader, bits)
+	q, _ := rand.Prime(rand.Reader, bits)
+	N := new(big.Int).Mul(p, q)
+	phi := new(big.Int).Mul(new(big.Int).Sub(p, big.NewInt(1)), new(big.Int).Sub(q, big.NewInt(1)))
+	gcd := new(big.Int).GCD(nil, nil, phi, e)
+	for gcd.Cmp(big.NewInt(1)) != 0 {
+		p, _ = rand.Prime(rand.Reader, bits)
+		q, _ = rand.Prime(rand.Reader, bits)
+		N = new(big.Int).Mul(p, q)
+		phi = new(big.Int).Mul(new(big.Int).Sub(p, big.NewInt(1)), new(big.Int).Sub(q, big.NewInt(1)))
+		gcd = new(big.Int).GCD(nil, nil, phi, e)
+	}
+
+	d := new(big.Int).ModInverse(e, phi)
+	return IzzyWizzy{
+		PublicKey: PublicKey{
+			Exp: e,
+			Mod: N,
+		},
+		privateKey: PrivateKey{
+			exp: d,
+			mod: N,
+		},
+	}
 }
 
 func (iwcrypto IzzyWizzy) Encrypt(plaintext []byte) ([]byte, error) {
-	cipher, err := aes.NewCipher(iwcrypto.Key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new cipher: %s", err)
-	}
-	plaintext = AddPadding(plaintext)
-	ciphertext := make([]byte, len(plaintext))
-	if len(plaintext)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("need a multiple of the blocksize for encrypt")
-	}
+	bytePT := new(big.Int).SetBytes(plaintext)
+	encrypted := new(big.Int).Exp(bytePT, iwcrypto.PublicKey.Exp, iwcrypto.PublicKey.Mod)
 
-	for bs, be := 0, aes.BlockSize; bs < len(plaintext); bs, be = bs+aes.BlockSize, be+aes.BlockSize {
-		cipher.Encrypt(ciphertext[bs:be], plaintext[bs:be])
-	}
-	return []byte(hex.EncodeToString(ciphertext)), nil
+	return []byte(hex.EncodeToString(encrypted.Bytes())), nil
 }
 
 func (iwcrypto IzzyWizzy) Decrypt(ciphertext []byte) ([]byte, error) {
@@ -38,56 +69,8 @@ func (iwcrypto IzzyWizzy) Decrypt(ciphertext []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can't decode ciphertext: %v", err)
 	}
-	cipher, err := aes.NewCipher(iwcrypto.Key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new cipher: %s", err)
-	}
+	byteCT := new(big.Int).SetBytes(ciphertext)
+	decrypted := new(big.Int).Exp(byteCT, iwcrypto.privateKey.exp, iwcrypto.PublicKey.Mod)
 
-	plaintext := make([]byte, len(ciphertext))
-	if len(ciphertext)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("need a multiple of the blocksize for decrypt")
-	}
-
-	for bs, be := 0, aes.BlockSize; bs < len(ciphertext); bs, be = bs+aes.BlockSize, be+aes.BlockSize {
-		cipher.Decrypt(plaintext[bs:be], ciphertext[bs:be])
-	}
-
-	return RemovePadding(plaintext)
-}
-
-func AddPadding(raw []byte) []byte {
-	padLen := aes.BlockSize - (len(raw) % aes.BlockSize)
-	var padding []byte
-	padding = append(padding, byte(padLen))
-	padding = bytes.Repeat(padding, padLen)
-	raw = append(raw, padding...)
-	return raw
-}
-
-func RemovePadding(raw []byte) ([]byte, error) {
-	var rawLen = len(raw)
-	if rawLen%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("data's length isn't a multiple of blockSize")
-	}
-	padBlock := raw[rawLen-aes.BlockSize:]
-
-	if ok, padLen := ValidatePadding(padBlock); ok {
-		return raw[:rawLen-padLen], nil
-	} else {
-		return nil, fmt.Errorf("incorrect padding in last block")
-	}
-}
-
-func ValidatePadding(block []byte) (bool, int) {
-	padCharacter := block[len(block)-1]
-	padSize := int(padCharacter)
-	if padSize > aes.BlockSize || padSize == 0 {
-		return false, 0
-	}
-	for i := len(block) - padSize; i < len(block); i++ {
-		if block[i] != padCharacter {
-			return false, 0
-		}
-	}
-	return true, padSize
+	return decrypted.Bytes(), nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"log"
 	"net/http"
 	"os"
@@ -23,7 +22,7 @@ func main() {
 	dir := filepath.Dir(exe)
 
 	router := mux.NewRouter()
-	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
+	// key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
 
 	ctx := context.Background()
 
@@ -51,9 +50,6 @@ func main() {
 		Repoq: repository.NewQuestionInterface(rawDBConn),
 		Repou: userService.Repo,
 		Repob: repository.NewBookFileSystem(filepath.Join(dir, "books")),
-		Cryp: crypto.IzzyWizzy{
-			Key: []byte(key),
-		},
 	}
 
 	us := fthttp.UserSubrouter{
@@ -93,6 +89,7 @@ func main() {
 	apiRouter.HandleFunc("/users", us.HandlerListsUser).Methods("GET")
 	apiRouter.HandleFunc("/users/questions", us.HandlerUserQuestionsGet).Methods("GET")
 	apiRouter.HandleFunc("/users/questions/answer", us.HandlerAnswerGet).Methods("GET")
+	apiRouter.HandleFunc("/users/questions/otherAnswer", us.HandlerOtherAnswerGet).Methods("GET")
 	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestionPost).Methods("POST")
 	apiRouter.HandleFunc("/users/questions/ask", us.HandlerListBooks).Methods("GET")
 

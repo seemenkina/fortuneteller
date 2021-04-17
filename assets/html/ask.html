@@ -120,7 +120,7 @@
                 dataType: 'json',
                 data: {
                     "book": $(".stylebook").attr("x-data"),
-                    "question": $('#question').serialize(),
+                    "question": $('#question').val(),
                     "page": $("#volume-control").val(),
                 },
                 success: function (data) {
@@ -128,8 +128,8 @@
                     window.location.href = data['redirect'];
                 },
                 error: function (data) {
-                    alertFunction("Try again!")
                     console.log(data)
+                    alertFunction("Try again!")
                 }
             });
         })

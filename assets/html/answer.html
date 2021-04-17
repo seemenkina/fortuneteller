@@ -7,11 +7,13 @@
 <html>
 <head>
     <title>Story by HTML5 UP</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="/static/css/main.css" />
-    <link rel="stylesheet" href="/static/css/hack.css" />
-    <noscript><link rel="stylesheet" href="/static/css/noscript.css" /></noscript>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
+    <link rel="stylesheet" href="/static/css/hack.css"/>
+    <noscript>
+        <link rel="stylesheet" href="/static/css/noscript.css"/>
+    </noscript>
     <style>
         body {
             background: rgba(195, 191, 191, 0.7) url("/static/images/black-map.jpg") no-repeat;
@@ -28,15 +30,24 @@
 
     <!-- Five -->
     <section class="wrapper style1 align-center heightmax padding-small">
-        <div class="inner heightmax" >
+        <div class="inner heightmax">
             <h1>My Dear</h1>
             <h2>Your question was very interesting</h2>
             <h3 id="question"></h3>
 
             <h2>And after much thought, here is my answer</h2>
             <h3 id="answer"></h3>
-            <a href="/homepage" class="button styleb fit">Return to homepage</a></li>
 
+            <h2>Also you can ask other books. Select one and enjoy</h2>
+            <div class="field half ">
+                <select name="books" id="books" style="font-weight: bold;">
+                    <option value>- Books Name -</option>
+                </select>
+            </div>
+            <div class="padding-small">
+                <a id="other" class="button styleb fit">What other book thinks?</a></li>
+                <a href="/homepage" class="button styleb fit">Return to homepage</a></li>
+            </div>
         </div>
 
     </section>
@@ -52,6 +63,16 @@
 <script src="/static/js/util.js"></script>
 <script src="/static/js/main.js"></script>
 
+<script lang="JavaScript">
+    function addBookName(id, name) {
+        $("#books").append(
+            $(`
+                <option value="${id}"> ${name} </option>
+`)
+        )
+    }
+</script>
+
 <script>
 
     $(document).ready(function () {
@@ -60,10 +81,15 @@
             type: 'get',
             dataType: 'json',
             data: {
-                "id" : window.location.hash.slice(1),
+                "id": window.location.hash.slice(1),
             },
             success: function (data) {
                 console.log(data);
+                data["Books"].forEach(function (element) {
+                    console.log(element);
+                    addBookName(element["Name"], element["Name"])
+                });
+
                 console.log(window.location.hash.slice(1))
                 $('#question').text(data["Question"]);
                 $('#answer').text(data["Answer"]);
@@ -71,8 +97,29 @@
             error: function (data) {
                 console.log(data)
             }
-
         })
+
+        $('#other').on("click", function (e) {
+            e.preventDefault();
+            $.ajax({
+                url: '/api/v1/users/questions/otherAnswer',
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    "id": window.location.hash.slice(1),
+                    "id_book": $('#books').val(),
+                },
+                success: function (data) {
+                    console.log(data);
+                    $('#question').text(data["Question"]);
+                    $('#answer').text(data["Answer"]);
+                },
+                error: function (data) {
+                    console.log(data)
+                }
+            });
+        })
+
     })
 </script>
 

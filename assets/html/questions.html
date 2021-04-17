@@ -38,8 +38,8 @@
     <!-- One -->
     <section
             class="banner style1 orient-left content-align-left image-position-right fullscreen onload-image-fade-in onload-content-fade-right">
-
         <div class="content layer" style="font-weight: bold;">
+            <h3><span id="title"></span></h3>
             <dl id="list_questions"></dl>
 
         </div>
@@ -67,8 +67,14 @@
 <script src="/static/js/util.js"></script>
 <script src="/static/js/main.js"></script>
 
+
+
 <script>
     $(document).ready(function () {
+         if (window.location.hash.slice(1) !== "") {
+             $('#title').append("If you want to ask this question again without even knowing it, click on it")
+         };
+
         $.ajax({
             url: '/api/v1/users/questions',
             type: 'get',
@@ -82,7 +88,7 @@
                     console.log(el);
                     $("#list_questions").append(
                         $(`
-                        <dt>${el["Question"]}</dt>
+                        <dt><a href="/answer#${el["ID"]}">${el["Question"]}</a></dt>
                         <dd>
                             <p>${el["Answer"]}</p>
                         </dd>
