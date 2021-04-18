@@ -93,8 +93,8 @@ func main() {
 	apiRouter.HandleFunc("/users/questions", us.HandlerUserQuestionsGet).Methods("GET")
 	apiRouter.HandleFunc("/users/questions/answer", us.HandlerAnswerGet).Methods("GET")
 	apiRouter.HandleFunc("/users/questions/otherAnswer", us.HandlerOtherAnswerGet).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestionPost).Methods("POST")
 	apiRouter.HandleFunc("/users/questions/ask", us.HandlerListBooks).Methods("GET")
+	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestionPost).Methods("POST")
 
 	err = http.ListenAndServe(":8080", router)
 	if err != nil {
