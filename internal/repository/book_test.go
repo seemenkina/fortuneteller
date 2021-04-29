@@ -26,10 +26,9 @@ func TestBookfs_FindRowInBook(t *testing.T) {
 
 func TestBookfs_GetBookKey(t *testing.T) {
 	repo := NewBookFileSystem("testdata/books")
-	bk, err := repo.GetBookKey("b1")
-	require.NoError(t, err)
-	c, err := bk.Encrypt([]byte("FY0363251JDF9IC02BPFX245C3FCD66="))
-	require.NoError(t, err)
+	bk := repo.GetBookKey("b1")
+	// require.NoError(t, err)
+	c := bk.Encrypt([]byte("FY0363251JDF9IC02BPFX245C3FCD66="))
 	t.Logf("encrypted %v", c)
 	p, err := bk.Decrypt(c)
 	require.NoError(t, err)

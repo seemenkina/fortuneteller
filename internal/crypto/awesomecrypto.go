@@ -2,13 +2,14 @@ package crypto
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
+	"log"
 	"math/big"
 )
 
 type AwesomeCrypto interface {
-	Encrypt(plaintext []byte) ([]byte, error)
+	Encrypt(plaintext []byte) []byte
 	Decrypt(ciphertext []byte) ([]byte, error)
 }
 
@@ -27,7 +28,7 @@ type IzzyWizzy struct {
 	privateKey PrivateKey
 }
 
-const bits = 200
+const bits = 1024
 
 func GenerateKeyPair() IzzyWizzy {
 	e := big.NewInt(3)
@@ -57,17 +58,27 @@ func GenerateKeyPair() IzzyWizzy {
 	}
 }
 
-func (iwcrypto IzzyWizzy) Encrypt(plaintext []byte) ([]byte, error) {
+func (iwcrypto IzzyWizzy) Encrypt(plaintext []byte) []byte {
+	if iwcrypto.PublicKey.Exp == nil {
+		log.Printf("RETURN PLAINTEXT: %s", plaintext)
+		return plaintext
+	}
+
 	bytePT := new(big.Int).SetBytes(plaintext)
 	encrypted := new(big.Int).Exp(bytePT, iwcrypto.PublicKey.Exp, iwcrypto.PublicKey.Mod)
 
-	return []byte(hex.EncodeToString(encrypted.Bytes())), nil
+	return []byte(base64.StdEncoding.EncodeToString(encrypted.Bytes()))
 }
 
 func (iwcrypto IzzyWizzy) Decrypt(ciphertext []byte) ([]byte, error) {
-	ciphertext, err := hex.DecodeString(string(ciphertext))
+	ciphertext, err := base64.StdEncoding.DecodeString(string(ciphertext))
 	if err != nil {
 		return nil, fmt.Errorf("can't decode ciphertext: %v", err)
+	}
+
+	if iwcrypto.privateKey.exp == nil {
+		log.Printf("RETURN CIPHERTEXT: %s", ciphertext)
+		return ciphertext, nil
 	}
 	byteCT := new(big.Int).SetBytes(ciphertext)
 	decrypted := new(big.Int).Exp(byteCT, iwcrypto.privateKey.exp, iwcrypto.PublicKey.Mod)

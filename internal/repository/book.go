@@ -15,23 +15,25 @@ import (
 type Book interface {
 	FindRowInBook(book string, row int) (string, error)
 	ListBooks() ([]data.Book, error)
-	GetBookKey(book string) (crypto.AwesomeCrypto, error)
+	GetBookKey(book string) crypto.AwesomeCrypto
 }
 
 type bookfs struct {
 	Path    string
-	BookKey map[string]crypto.AwesomeCrypto
+	BookKey map[string]crypto.IzzyWizzy
 }
 
 func NewBookFileSystem(path string) Book {
+	// TODO: save key on file
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil
 	}
-	books := make(map[string]crypto.AwesomeCrypto, len(files))
+	books := make(map[string]crypto.IzzyWizzy, len(files))
 	for _, f := range files {
 		fname := f.Name()
 		books[fname] = crypto.GenerateKeyPair()
+		log.Printf("BOOK %s: %v", fname, books[fname])
 	}
 	return &bookfs{Path: path, BookKey: books}
 }
@@ -106,10 +108,6 @@ func rowsInFile(filename string) int {
 	return result
 }
 
-func (bfs bookfs) GetBookKey(book string) (crypto.AwesomeCrypto, error) {
-	if value, ok := bfs.BookKey[book]; ok {
-		return value, nil
-	} else {
-		return crypto.IzzyWizzy{}, fmt.Errorf("no such book %s", book)
-	}
+func (bfs bookfs) GetBookKey(book string) crypto.AwesomeCrypto {
+	return bfs.BookKey[book]
 }

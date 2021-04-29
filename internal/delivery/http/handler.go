@@ -245,17 +245,12 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 		return
 	}
 
-	if otherAnswer == (data.Question{}) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"Question": "",
-			"Answer":   "",
-		})
-		return
-	}
+	pk := usersubrouter.QuestionService.Repob.GetBookKey(r.URL.Query().Get("id_book"))
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"Question": otherAnswer.Question,
 		"Answer":   otherAnswer.Answer,
+		"PubKey":   pk,
 	})
 
 }

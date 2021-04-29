@@ -19,15 +19,10 @@ type QuestionService struct {
 }
 
 func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, askData data.FromAskData) (data.Question, error) {
-	book, err := qs.Repob.GetBookKey(askData.Name)
-	if err != nil {
-		return data.Question{}, fmt.Errorf("can't find book %s : %v", askData.Name, err)
-	}
+	book := qs.Repob.GetBookKey(askData.Name)
+
 	log.Printf("QUESTION: %s ", question)
-	encryptedQuestion, err := book.Encrypt([]byte(question))
-	if err != nil {
-		return data.Question{}, fmt.Errorf("cant encrypt question : %v", err)
-	}
+	encryptedQuestion := book.Encrypt([]byte(question))
 
 	answer, err := qs.Repob.FindRowInBook(askData.Name, askData.Row)
 	if err != nil {
@@ -71,11 +66,7 @@ func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, userna
 
 	for i, question := range questions {
 		bookname := strings.Split(question.BData, ":")[0]
-		book, err := qs.Repob.GetBookKey(bookname)
-		if err != nil {
-			return nil, fmt.Errorf("can't find book %s : %v", bookname, err)
-		}
-
+		book := qs.Repob.GetBookKey(bookname)
 		decryptedQuestion, err := book.Decrypt([]byte(question.Question))
 		if err != nil {
 			return nil, fmt.Errorf("cant decrypt question : %v", err)
@@ -102,11 +93,7 @@ func (qs QuestionService) FindUserQuestionByID(ctx context.Context, id string, u
 
 	if question.Owner == user.ID {
 		bookname := strings.Split(question.BData, ":")[0]
-		book, err := qs.Repob.GetBookKey(bookname)
-		if err != nil {
-			return data.Question{}, fmt.Errorf("can't find book %s : %v", bookname, err)
-		}
-
+		book := qs.Repob.GetBookKey(bookname)
 		b, err := book.Decrypt([]byte(question.Question))
 		if err != nil {
 			return data.Question{}, fmt.Errorf("cant decrypt question : %v", err)
@@ -143,29 +130,20 @@ func (qs QuestionService) AskQuestionFromAnotherBook(ctx context.Context,
 			Answer:   answer,
 		}, nil
 	} else {
-		// return encrypted question
-		book, err := qs.Repob.GetBookKey(bookData[0])
-		if err != nil {
-			return data.Question{}, fmt.Errorf("can't find book %s : %v", bookname, err)
-		}
+		// return encrypted question on new book key
+		book := qs.Repob.GetBookKey(bookData[0])
+		newBook := qs.Repob.GetBookKey(bookname)
+
 		decryptedQuestion, err := book.Decrypt([]byte(question.Question))
 		if err != nil {
-			return data.Question{}, fmt.Errorf("cant encrypt question : %v", err)
+			return data.Question{}, fmt.Errorf("cant decrypt question : %v", err)
 		}
 
-		newBook, err := qs.Repob.GetBookKey(bookname)
-		if err != nil {
-			return data.Question{}, fmt.Errorf("can't find new book %s : %v", bookname, err)
-		}
-		encryptedQuestion, err := newBook.Encrypt(decryptedQuestion)
-		if err != nil {
-			return data.Question{}, fmt.Errorf("cant encrypt question : %v", err)
-		}
+		encryptedQuestion := newBook.Encrypt(decryptedQuestion)
 
 		return data.Question{
 			Question: string(encryptedQuestion),
 			Answer:   answer,
 		}, nil
 	}
-
 }
