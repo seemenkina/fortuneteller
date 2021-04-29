@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,28 +12,48 @@ import (
 
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
-	"fortuneteller/internal/repository"
-	"github.com/gorilla/mux"
-
 	fthttp "fortuneteller/internal/delivery/http"
+	"fortuneteller/internal/repository"
 	"fortuneteller/internal/service"
+
+	"github.com/ardanlabs/conf"
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	exe, err := os.Executable()
-	dir := filepath.Dir(exe)
-
-	router := mux.NewRouter()
-	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
+	// =========================================================================
+	// Configuration database
 
 	ctx := context.Background()
 
+	var cfg struct {
+		DB struct {
+			User         string `conf:"default:admin"`
+			Password     string `conf:"default:123456,noprint"`
+			Host         string `conf:"default:database"`
+			DatabaseName string `conf:"default:pgdb"`
+			DisableTLS   string `conf:"default:disable"`
+		}
+	}
+
+	if err := conf.Parse(os.Args[1:], "FORTUNETELLER", &cfg); err != nil {
+		if err == conf.ErrHelpWanted {
+			usage, err := conf.Usage("FORTUNETELLER", &cfg)
+			if err != nil {
+				log.Printf("generating config usage: %v", err)
+			}
+			fmt.Println(usage)
+			return
+		}
+		log.Printf("error: parsing config : %v", err)
+	}
+
 	rawDBConn, err := data.Open(ctx, data.Config{
-		User:         "admin",
-		Password:     "123456",
-		Host:         "database",
-		DatabaseName: "pgdb",
-		DisableTLS:   "disable",
+		User:         cfg.DB.User,
+		Password:     cfg.DB.Password,
+		Host:         cfg.DB.Host,
+		DatabaseName: cfg.DB.DatabaseName,
+		DisableTLS:   cfg.DB.DisableTLS,
 	})
 	if err != nil {
 		log.Printf("unable to connect db: %v", err)
@@ -43,17 +64,30 @@ func main() {
 		rawDBConn.Close()
 	}()
 
+	// =========================================================================
+	// Configuration user interface
+
+	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
 	var userService = &service.UserService{
 		Repo: repository.NewUserInterface(rawDBConn),
 		Token: crypto.MumboJumbo{
 			Key: []byte(key),
 		},
 	}
+
+	// =========================================================================
+	// Configuration interface for question
+
+	exe, err := os.Executable()
+	dir := filepath.Dir(exe)
 	var questionService = &service.QuestionService{
 		Repoq: repository.NewQuestionInterface(rawDBConn),
 		Repou: userService.Repo,
 		Repob: repository.NewBookFileSystem(filepath.Join(dir, "books")),
 	}
+
+	// =========================================================================
+	// Configuration router and subrouter
 
 	us := fthttp.UserSubrouter{
 		Router:          mux.Router{},
@@ -61,6 +95,7 @@ func main() {
 		QuestionService: questionService,
 	}
 
+	router := mux.NewRouter()
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./assets"))))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/homepage", http.StatusFound)
