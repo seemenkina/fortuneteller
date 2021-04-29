@@ -10,6 +10,7 @@ import (
 
 	"fortuneteller/internal/data"
 	"fortuneteller/internal/service"
+
 	"github.com/gorilla/mux"
 )
 

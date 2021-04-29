@@ -8,6 +8,7 @@ import (
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
 	"fortuneteller/internal/repository"
+
 	"github.com/google/uuid"
 )
 

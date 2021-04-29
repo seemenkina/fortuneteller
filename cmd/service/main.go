@@ -15,8 +15,8 @@ import (
 	fthttp "fortuneteller/internal/delivery/http"
 	"fortuneteller/internal/repository"
 	"fortuneteller/internal/service"
-	"github.com/ardanlabs/conf"
 
+	"github.com/ardanlabs/conf"
 	"github.com/gorilla/mux"
 )
 
