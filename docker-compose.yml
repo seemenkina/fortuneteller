@@ -7,6 +7,7 @@ services:
     volumes:
       - ./assets:/app/assets
       - ./books:/app/books
+      - ./books_keys:/app/books_keys
     ports:
       - 8080:8080
     depends_on:

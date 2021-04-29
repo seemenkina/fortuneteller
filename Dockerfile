@@ -9,5 +9,5 @@ WORKDIR /app
 COPY ./wait-for ./wait-for
 COPY --from=builder /app/fortuneteller ./fortuneteller
 EXPOSE 8080
-VOLUME ["/app/assets", "/app/books"]
+VOLUME ["/app/assets", "/app/books", "/app/books_keys"]
 ENTRYPOINT ["/app/wait-for", "database:5432", "--", "/app/fortuneteller"]

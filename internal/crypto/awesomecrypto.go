@@ -3,9 +3,12 @@ package crypto
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
+	"os"
 )
 
 type AwesomeCrypto interface {
@@ -19,13 +22,13 @@ type PublicKey struct {
 }
 
 type PrivateKey struct {
-	exp *big.Int
-	mod *big.Int
+	Exp *big.Int
+	Mod *big.Int
 }
 
 type IzzyWizzy struct {
 	PublicKey  PublicKey
-	privateKey PrivateKey
+	PrivateKey PrivateKey
 }
 
 const bits = 1024
@@ -51,9 +54,9 @@ func GenerateKeyPair() IzzyWizzy {
 			Exp: e,
 			Mod: N,
 		},
-		privateKey: PrivateKey{
-			exp: d,
-			mod: N,
+		PrivateKey: PrivateKey{
+			Exp: d,
+			Mod: N,
 		},
 	}
 }
@@ -76,12 +79,60 @@ func (iwcrypto IzzyWizzy) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, fmt.Errorf("can't decode ciphertext: %v", err)
 	}
 
-	if iwcrypto.privateKey.exp == nil {
+	if iwcrypto.PrivateKey.Exp == nil {
 		log.Printf("RETURN CIPHERTEXT: %s", ciphertext)
 		return ciphertext, nil
 	}
 	byteCT := new(big.Int).SetBytes(ciphertext)
-	decrypted := new(big.Int).Exp(byteCT, iwcrypto.privateKey.exp, iwcrypto.PublicKey.Mod)
+	decrypted := new(big.Int).Exp(byteCT, iwcrypto.PrivateKey.Exp, iwcrypto.PublicKey.Mod)
 
 	return decrypted.Bytes(), nil
+}
+
+func (iwcrypto IzzyWizzy) SaveKeyOnFile(filename string) error {
+	var f *os.File
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		f, err = os.Create(filename)
+
+		if err != nil {
+			return err
+		}
+		log.Printf("CREATE FILE: %s", filename)
+	} else {
+		f, err = os.Open(filename)
+		if err != nil {
+			return err
+		}
+		log.Printf("OPEN FILE: %s", filename)
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	js, err := json.Marshal(iwcrypto)
+	if err != nil {
+		return err
+	}
+
+	if _, err = f.Write(js); err != nil {
+		return err
+	}
+	return nil
+}
+
+func LoadKeyFromFile(filename string) IzzyWizzy {
+	f, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Printf("ERROR LOAD: %v", err)
+		return IzzyWizzy{}
+	}
+
+	key := IzzyWizzy{}
+	if err := json.Unmarshal(f, &key); err != nil {
+		log.Printf("ERROR LOAD: %v", err)
+		return IzzyWizzy{}
+	}
+
+	return key
 }

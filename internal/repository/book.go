@@ -23,18 +23,42 @@ type bookfs struct {
 	BookKey map[string]crypto.IzzyWizzy
 }
 
-func NewBookFileSystem(path string) Book {
-	// TODO: save key on file
-	files, err := ioutil.ReadDir(path)
+func NewBookFileSystem(path, keyPath string) Book {
+	bookFiles, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil
 	}
-	books := make(map[string]crypto.IzzyWizzy, len(files))
-	for _, f := range files {
-		fname := f.Name()
-		books[fname] = crypto.GenerateKeyPair()
-		log.Printf("BOOK %s: %v", fname, books[fname])
+
+	keysFiles, err := ioutil.ReadDir(keyPath)
+	if err != nil {
+		return nil
 	}
+
+	books := make(map[string]crypto.IzzyWizzy, len(bookFiles))
+	for _, f := range bookFiles {
+		fname := f.Name()
+		log.Printf("START CREATE KEY FOR BOOK %s: ", fname)
+		if len(keysFiles) == 0 {
+			books[fname] = crypto.GenerateKeyPair()
+			if err := books[fname].SaveKeyOnFile(filepath.Join(keyPath, fname+"_key")); err != nil {
+				log.Printf("ERROR SAVE: %v", err)
+				return nil
+			}
+		} else {
+			key := crypto.LoadKeyFromFile(filepath.Join(keyPath, fname) + "_key")
+			if (crypto.IzzyWizzy{} == key) {
+				books[fname] = crypto.GenerateKeyPair()
+				if err := books[fname].SaveKeyOnFile(filepath.Join(keyPath, fname+"_key")); err != nil {
+					log.Printf("ERROR SAVE: %v", err)
+					return nil
+				}
+			} else {
+				log.Printf("KEY IS LOAD")
+				books[fname] = key
+			}
+		}
+	}
+
 	return &bookfs{Path: path, BookKey: books}
 }
 

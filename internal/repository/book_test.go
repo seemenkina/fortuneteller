@@ -9,7 +9,7 @@ import (
 )
 
 func TestBookfs_ListBooks(t *testing.T) {
-	repo := NewBookFileSystem("testdata/books")
+	repo := NewBookFileSystem("testdata/books", "")
 	books, err := repo.ListBooks()
 	require.NoError(t, err)
 	assert.ElementsMatch(t, books, []data.Book{
@@ -18,14 +18,14 @@ func TestBookfs_ListBooks(t *testing.T) {
 }
 
 func TestBookfs_FindRowInBook(t *testing.T) {
-	repo := NewBookFileSystem("testdata/books")
+	repo := NewBookFileSystem("testdata/books", "")
 	str, err := repo.FindRowInBook("b1", 3)
 	require.NoError(t, err)
 	assert.Equal(t, str, "4")
 }
 
 func TestBookfs_GetBookKey(t *testing.T) {
-	repo := NewBookFileSystem("testdata/books")
+	repo := NewBookFileSystem("testdata/books", "")
 	bk := repo.GetBookKey("b1")
 	// require.NoError(t, err)
 	c := bk.Encrypt([]byte("FY0363251JDF9IC02BPFX245C3FCD66="))

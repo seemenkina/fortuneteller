@@ -15,15 +15,15 @@ import (
 	fthttp "fortuneteller/internal/delivery/http"
 	"fortuneteller/internal/repository"
 	"fortuneteller/internal/service"
-
 	"github.com/ardanlabs/conf"
+
 	"github.com/gorilla/mux"
 )
 
 func main() {
 	// =========================================================================
 	// Configuration database
-
+	log.Printf("START CONFIGURATE DATABASE")
 	ctx := context.Background()
 
 	var cfg struct {
@@ -63,10 +63,12 @@ func main() {
 		log.Printf("database stopping")
 		rawDBConn.Close()
 	}()
+	log.Printf("SUCCES CONFIGURATE DATABASE")
 
 	// =========================================================================
 	// Configuration user interface
 
+	log.Printf("START CONFIGURATE USER SERVICE")
 	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
 	var userService = &service.UserService{
 		Repo: repository.NewUserInterface(rawDBConn),
@@ -74,17 +76,22 @@ func main() {
 			Key: []byte(key),
 		},
 	}
+	log.Printf("SUCCES CONFIGURATE USER SERVICE")
 
 	// =========================================================================
 	// Configuration interface for question
 
 	exe, err := os.Executable()
 	dir := filepath.Dir(exe)
+	log.Printf("EXECUTABLE DIR: %s", dir)
+
+	log.Printf("START CONFIGURATE QUESTION SERVICE")
 	var questionService = &service.QuestionService{
 		Repoq: repository.NewQuestionInterface(rawDBConn),
 		Repou: userService.Repo,
-		Repob: repository.NewBookFileSystem(filepath.Join(dir, "books")),
+		Repob: repository.NewBookFileSystem(filepath.Join(dir, "books"), filepath.Join(dir, "books_keys")),
 	}
+	log.Printf("SUCCES CONFIGURATE QUESTION SERVICE")
 
 	// =========================================================================
 	// Configuration router and subrouter
