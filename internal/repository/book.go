@@ -4,18 +4,19 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
+	"fortuneteller/internal/logger"
+	"github.com/sirupsen/logrus"
 )
 
 type Book interface {
-	FindRowInBook(book string, row int) (string, error)
 	ListBooks() ([]data.Book, error)
 	GetBookKey(book string) crypto.AwesomeCrypto
+	FindRowInBook(book string, row int) (string, error)
 }
 
 type bookfs struct {
@@ -26,34 +27,32 @@ type bookfs struct {
 func NewBookFileSystem(path, keyPath string) Book {
 	bookFiles, err := ioutil.ReadDir(path)
 	if err != nil {
+		logger.WithFunction().Errorf("unable to read books file system directory: %v", err)
 		return nil
 	}
 
 	keysFiles, err := ioutil.ReadDir(keyPath)
 	if err != nil {
+		logger.WithFunction().Errorf("unable to read keys file system directory: %v", err)
 		return nil
 	}
 
 	books := make(map[string]crypto.IzzyWizzy, len(bookFiles))
 	for _, f := range bookFiles {
 		fname := f.Name()
-		log.Printf("START CREATE KEY FOR BOOK %s: ", fname)
+		logger.WithFunction().WithField("book_name", fname).Infof("starting to create book's key pair")
 		if len(keysFiles) == 0 {
-			books[fname] = crypto.GenerateKeyPair()
-			if err := books[fname].SaveKeyOnFile(filepath.Join(keyPath, fname+"_key")); err != nil {
-				log.Printf("ERROR SAVE: %v", err)
+			if err := generateNewKey(books, fname, keyPath); err != nil {
 				return nil
 			}
 		} else {
 			key := crypto.LoadKeyFromFile(filepath.Join(keyPath, fname) + "_key")
 			if (crypto.IzzyWizzy{} == key) {
-				books[fname] = crypto.GenerateKeyPair()
-				if err := books[fname].SaveKeyOnFile(filepath.Join(keyPath, fname+"_key")); err != nil {
-					log.Printf("ERROR SAVE: %v", err)
+				if err := generateNewKey(books, fname, keyPath); err != nil {
 					return nil
 				}
 			} else {
-				log.Printf("KEY IS LOAD")
+				logger.WithFunction().WithField("file_name", fname).Info("key for book is load")
 				books[fname] = key
 			}
 		}
@@ -64,7 +63,11 @@ func NewBookFileSystem(path, keyPath string) Book {
 
 func (bfs bookfs) FindRowInBook(book string, row int) (string, error) {
 	filename := filepath.Join(bfs.Path, book)
-	log.Printf("FIND ROW %d in %s", row, filename)
+	logger.WithFunction().WithFields(logrus.Fields{
+		"book": filename,
+		"row":  row,
+	}).Info("starting to find row in book")
+
 	f, err := os.Open(filename)
 	if err != nil {
 		return "", fmt.Errorf("can't open file %s : %v", book, err)
@@ -86,7 +89,11 @@ func (bfs bookfs) FindRowInBook(book string, row int) (string, error) {
 		}
 		result++
 	}
-	log.Printf("ROW %d IN %s : %s", result, filename, str)
+	logger.WithFunction().WithFields(logrus.Fields{
+		"book":   filename,
+		"result": str,
+	}).Info("the row in book is successfully find")
+
 	if scanner.Err() != nil {
 		return "", fmt.Errorf("scanner error: %v", err)
 	}
@@ -100,9 +107,7 @@ func (bfs bookfs) ListBooks() ([]data.Book, error) {
 	}
 	var books []data.Book
 	for _, f := range files {
-		// fmt.Println(f.Name())
 		fname := f.Name()
-		// fmt.Printf("l: %d", lenf)
 		books = append(books, data.Book{
 			Name: fname,
 			Rows: rowsInFile(filepath.Join(bfs.Path, fname)),
@@ -134,4 +139,21 @@ func rowsInFile(filename string) int {
 
 func (bfs bookfs) GetBookKey(book string) crypto.AwesomeCrypto {
 	return bfs.BookKey[book]
+}
+
+func generateNewKey(books map[string]crypto.IzzyWizzy, fname, keyPath string) error {
+	books[fname] = crypto.GenerateKeyPair()
+	logger.WithFunction().WithFields(logrus.Fields{
+		"public_key":  books[fname].PublicKey,
+		"private_key": books[fname].PrivateKey,
+	}).Info("new key pair are generated")
+
+	if err := books[fname].SaveKeyOnFile(filepath.Join(keyPath, fname+"_key")); err != nil {
+		logger.WithFunction().WithFields(logrus.Fields{
+			"error":     err,
+			"file_name": fname,
+		}).Errorf("error: save book key for file")
+		return err
+	}
+	return nil
 }

@@ -13,12 +13,12 @@ import (
 )
 
 type UserService struct {
-	Repo  repository.User
-	Token crypto.Token
+	UserRepository repository.User
+	Token          crypto.Token
 }
 
 func (us UserService) Register(ctx context.Context, username string) (string, error) {
-	_, err := us.Repo.FindUserByName(ctx, username)
+	_, err := us.UserRepository.FindUserByName(ctx, username)
 	switch {
 	case errors.Is(err, repository.ErrNoSuchUser):
 		// all ok
@@ -38,14 +38,14 @@ func (us UserService) Register(ctx context.Context, username string) (string, er
 		Token:    token,
 		ID:       uuid.New().String(),
 	}
-	if err := us.Repo.AddUser(ctx, user); err != nil {
+	if err := us.UserRepository.AddUser(ctx, user); err != nil {
 		return "", fmt.Errorf("cant add user : %v", err)
 	}
 	return token, nil
 }
 
 func (us UserService) Login(ctx context.Context, token string) (data.User, error) {
-	user, err := us.Repo.FindUserByToken(ctx, token)
+	user, err := us.UserRepository.FindUserByToken(ctx, token)
 	switch {
 	case err == nil:
 		return user, nil
@@ -57,5 +57,5 @@ func (us UserService) Login(ctx context.Context, token string) (data.User, error
 }
 
 func (us UserService) ListUsers(ctx context.Context) ([]data.User, error) {
-	return us.Repo.AllUsers(ctx)
+	return us.UserRepository.AllUsers(ctx)
 }

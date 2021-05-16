@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"os"
+
+	"fortuneteller/internal/logger"
 )
 
 type AwesomeCrypto interface {
@@ -63,7 +64,7 @@ func GenerateKeyPair() IzzyWizzy {
 
 func (iwcrypto IzzyWizzy) Encrypt(plaintext []byte) []byte {
 	if iwcrypto.PublicKey.Exp == nil {
-		log.Printf("RETURN PLAINTEXT: %s", plaintext)
+		logger.WithFunction().Infof("key is nil, return plaintext: %s", plaintext)
 		return plaintext
 	}
 
@@ -80,7 +81,7 @@ func (iwcrypto IzzyWizzy) Decrypt(ciphertext []byte) ([]byte, error) {
 	}
 
 	if iwcrypto.PrivateKey.Exp == nil {
-		log.Printf("RETURN CIPHERTEXT: %s", ciphertext)
+		logger.WithFunction().Infof("key is nil, return ciphertext: %s", ciphertext)
 		return ciphertext, nil
 	}
 	byteCT := new(big.Int).SetBytes(ciphertext)
@@ -93,18 +94,15 @@ func (iwcrypto IzzyWizzy) SaveKeyOnFile(filename string) error {
 	var f *os.File
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
-		f, err = os.Create(filename)
-
-		if err != nil {
+		if f, err = os.Create(filename); err != nil {
 			return err
 		}
-		log.Printf("CREATE FILE: %s", filename)
+		logger.WithFunction().Infof("create file for save book key: %s", filename)
 	} else {
-		f, err = os.Open(filename)
-		if err != nil {
+		if f, err = os.Open(filename); err != nil {
 			return err
 		}
-		log.Printf("OPEN FILE: %s", filename)
+		logger.WithFunction().Infof("open file for save book key: %s", filename)
 	}
 	defer func() {
 		_ = f.Close()
@@ -124,13 +122,13 @@ func (iwcrypto IzzyWizzy) SaveKeyOnFile(filename string) error {
 func LoadKeyFromFile(filename string) IzzyWizzy {
 	f, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Printf("ERROR LOAD: %v", err)
+		logger.WithFunction().Warnf("error while load key from file: %v", err)
 		return IzzyWizzy{}
 	}
 
 	key := IzzyWizzy{}
 	if err := json.Unmarshal(f, &key); err != nil {
-		log.Printf("ERROR LOAD: %v", err)
+		logger.WithFunction().Errorf("error while unmarshal key from json: %v", err)
 		return IzzyWizzy{}
 	}
 

@@ -3,13 +3,14 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"fortuneteller/internal/data"
+	"fortuneteller/internal/logger"
 	"fortuneteller/internal/service"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 )
@@ -20,77 +21,72 @@ type UserSubrouter struct {
 	QuestionService *service.QuestionService
 }
 
-func (usersubrouter UserSubrouter) HandlerRegisterPost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
+// data in { username }
+func (usersubrouter UserSubrouter) HandlerRegister(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
 		writeError(w, http.StatusBadRequest, "failed to parse register form: %v", err)
 		return
 	}
 	username := r.Form.Get("username")
 	if len(username) == 0 {
-		writeError(w, http.StatusBadRequest, "username is empty")
+		writeError(w, http.StatusBadRequest, "username in request form is empty")
 		return
 	}
 
+	logger.WithFunction().WithField("username", username).Info("starting the user registration")
 	token, err := usersubrouter.UserService.Register(r.Context(), username)
-	log.Printf("user: %s token: %s", username, token)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "can't register user: %v", err)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "tokencookie",
-		Value:   token,
-		Expires: time.Now().Add(365 * 24 * time.Hour),
-		Path:    "/",
-	})
-	tokencookie, _ := r.Cookie("tokencookie")
-	log.Printf("register token from cookie: %v", tokencookie)
+	logger.WithFunction().WithFields(logrus.Fields{
+		"username": username,
+		"token":    token,
+	}).Info("the user is successfully register")
+
+	setCookie(w, r, "tokencookie", token)
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"redirect": "/register#" + token,
 		"username": username,
 	})
-
 }
 
-func (usersubrouter UserSubrouter) HandlerLoginPost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
+// data in { token }
+func (usersubrouter UserSubrouter) HandlerLogin(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
 		writeError(w, http.StatusBadRequest, "failed to parse login form: %v", err)
 		return
 	}
 
 	token := r.Form.Get("token")
 	if len(token) == 0 {
-		writeError(w, http.StatusBadRequest, "token is empty")
+		writeError(w, http.StatusBadRequest, "token in request form is empty")
 		return
 	}
-	log.Printf("token: %s\n", token)
+
+	logger.WithFunction().WithField("token", token).Info("starting the user login")
 	user, err := usersubrouter.UserService.Login(r.Context(), token)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "can't login user: %v", err)
 		return
 	}
+	logger.WithFunction().WithFields(logrus.Fields{
+		"username": user.Username,
+		"token":    user.Token,
+	}).Info("the user is successfully login")
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "tokencookie",
-		Value:   token,
-		Expires: time.Now().Add(365 * 24 * time.Hour),
-		Path:    "/",
-	})
-	tokencookie, _ := r.Cookie("tokencookie")
-	log.Printf("login token from cookie: %v", tokencookie)
+	setCookie(w, r, "tokencookie", token)
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"redirect": "/homepage",
 		"username": user.Username,
 	})
-
 }
 
-func (usersubrouter UserSubrouter) HandlerListsUser(w http.ResponseWriter, r *http.Request) {
+// data in { }
+func (usersubrouter UserSubrouter) HandlerListUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := usersubrouter.UserService.ListUsers(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to return all users: %v", err)
@@ -102,20 +98,14 @@ func (usersubrouter UserSubrouter) HandlerListsUser(w http.ResponseWriter, r *ht
 		usernames[i] = u.Username
 	}
 
+	logger.WithFunction().WithField("users", usernames).Info("return list of all users")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"users": usernames,
 	})
 }
 
-func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to parse user questions form: %v", err)
-		return
-	}
-	username := r.Form.Get("username")
-	log.Printf("USERNAME: %s", username)
-
+// data in { username }
+func (usersubrouter UserSubrouter) HandlerGetUserQuestions(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("tokencookie")
 	if err != nil || cookie.Value == "" {
 		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
@@ -127,7 +117,14 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 		writeError(w, http.StatusInternalServerError, "unable to get username by token: %v", err)
 		return
 	}
-	log.Printf("USERNAME FROM COOKIE: %s", usernameFromCookie)
+	logger.WithFunction().WithField("username", usernameFromCookie).Info("get username from cookie")
+
+	if err := r.ParseForm(); err != nil {
+		writeError(w, http.StatusBadRequest, "failed to parse user questions form: %v", err)
+		return
+	}
+	username := r.Form.Get("username")
+	logger.WithFunction().WithField("username", username).Info("get username from request form")
 
 	var questions []data.Question
 	if username == "" || usernameFromCookie == username {
@@ -143,26 +140,16 @@ func (usersubrouter UserSubrouter) HandlerUserQuestionsGet(w http.ResponseWriter
 			return
 		}
 	}
-	//
-	// questionData := make([]struct {
-	// 	Id string
-	// 	Answer   string
-	// 	Question string
-	// }, len(questions))
-	//
-	// for i, q := range questions {
-	// 	questionData[i].Id = q.ID
-	// 	questionData[i].Answer = q.Answer
-	// 	questionData[i].Question = q.Question
-	// }
 
+	logger.WithFunction().WithField("user_questions", questions).Info("return list of user questions")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"questions": questions,
 	})
 
 }
 
-func (usersubrouter UserSubrouter) HandlerAnswerGet(w http.ResponseWriter, r *http.Request) {
+// data in { question id } (from URL)
+func (usersubrouter UserSubrouter) HandlerGetAnswerToQuestion(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("tokencookie")
 	if err != nil || cookie.Value == "" {
 		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
@@ -175,47 +162,37 @@ func (usersubrouter UserSubrouter) HandlerAnswerGet(w http.ResponseWriter, r *ht
 		return
 	}
 
-	log.Printf("QUESTION ID : %v", r.URL.Query().Get("id"))
+	questionId := r.URL.Query().Get("id")
+	logger.WithFunction().WithField("question_id", questionId).Info("get question id from url query")
 
-	question, err := usersubrouter.QuestionService.FindUserQuestionByID(r.Context(),
-		r.URL.Query().Get("id"), usernameFromCookie)
+	question, err := usersubrouter.QuestionService.FindUserQuestionByID(r.Context(), questionId, usernameFromCookie)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to get question by id: %v", err)
 		return
 	}
 
-	books, err := usersubrouter.QuestionService.Repob.ListBooks()
+	books, err := usersubrouter.QuestionService.BookRepository.ListBooks()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to return all books: %v", err)
 		return
 	}
-	booksData := make([]struct {
-		Name string
-		Id   int
-	}, len(books))
-	for i, b := range books {
-		booksData[i].Name = b.Name
-		booksData[i].Id = i + 1
-	}
 
-	if question == (data.Question{}) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"Question": "",
-			"Answer":   "",
-			"Books":    booksData,
-		})
-		return
-	}
+	logger.WithFunction().WithFields(logrus.Fields{
+		"question": question.Question,
+		"answer":   question.Answer,
+		"books":    books,
+	}).Info("return the answer to the question and available books")
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"Question": question.Question,
 		"Answer":   question.Answer,
-		"Books":    booksData,
+		"Books":    books,
 	})
 
 }
 
-func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, r *http.Request) {
+// data in { question id, new book id } (from url)
+func (usersubrouter UserSubrouter) HandlerGetAnswerToQuestionFromAnotherBook(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("tokencookie")
 	if err != nil || cookie.Value == "" {
 		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
@@ -228,7 +205,10 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 		return
 	}
 
-	log.Printf("OTHER QUESTION ID : %v, %v", r.URL.Query().Get("id"), r.URL.Query().Get("id_book"))
+	logger.WithFunction().WithFields(logrus.Fields{
+		"question_id": r.URL.Query().Get("id"),
+		"book_id":     r.URL.Query().Get("id_book"),
+	}).Info("try to ask another book same question")
 
 	question, err := usersubrouter.QuestionService.FindUserQuestionByID(r.Context(),
 		r.URL.Query().Get("id"), usernameFromCookie)
@@ -236,8 +216,6 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 		writeError(w, http.StatusInternalServerError, "unable to get question by id: %v", err)
 		return
 	}
-
-	log.Print("OTHER "+r.Form.Get("id_book"), r.Form.Get("book"))
 
 	otherAnswer, err := usersubrouter.QuestionService.AskQuestionFromAnotherBook(r.Context(),
 		question, usernameFromCookie, r.URL.Query().Get("id_book"))
@@ -246,7 +224,13 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 		return
 	}
 
-	pk := usersubrouter.QuestionService.Repob.GetBookKey(r.URL.Query().Get("id_book"))
+	pk := usersubrouter.QuestionService.BookRepository.GetBookKey(r.URL.Query().Get("id_book"))
+
+	logger.WithFunction().WithFields(logrus.Fields{
+		"question": question.Question,
+		"answer":   question.Answer,
+		"pubKey":   pk,
+	}).Info("return the answer to the question and the public key of another book")
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"Question": otherAnswer.Question,
@@ -256,14 +240,15 @@ func (usersubrouter UserSubrouter) HandlerOtherAnswerGet(w http.ResponseWriter, 
 
 }
 
-func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter, r *http.Request) {
+// data in { question, book , page }
+func (usersubrouter UserSubrouter) HandlerAskQuestion(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("tokencookie")
 	if err != nil || cookie.Value == "" {
 		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
 		return
 	}
 
-	user, err := usersubrouter.UserService.Repo.FindUserByToken(r.Context(), cookie.Value)
+	user, err := usersubrouter.UserService.UserRepository.FindUserByToken(r.Context(), cookie.Value)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to get user by token: %v", err)
 		return
@@ -273,7 +258,12 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 		writeError(w, http.StatusBadRequest, "failed to parse ask questions form: %v", err)
 		return
 	}
-	log.Print(r.Form.Get("question"), r.Form.Get("book"), r.Form.Get("page"))
+
+	logger.WithFunction().WithFields(logrus.Fields{
+		"question": r.Form.Get("question"),
+		"book":     r.Form.Get("book"),
+		"page":     r.Form.Get("page"),
+	}).Info("parse parameters from request")
 
 	row, _ := strconv.Atoi(r.Form.Get("page"))
 	question, err := usersubrouter.QuestionService.AskQuestion(
@@ -289,25 +279,42 @@ func (usersubrouter UserSubrouter) HandlerAskQuestionPost(w http.ResponseWriter,
 		return
 	}
 
+	logger.WithFunction().WithField("question", question).Info("new question is successfully asked")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"redirect": "/answer#" + question.ID,
 	})
 }
 
 func (usersubrouter UserSubrouter) HandlerListBooks(w http.ResponseWriter, r *http.Request) {
-	books, err := usersubrouter.QuestionService.Repob.ListBooks()
+	books, err := usersubrouter.QuestionService.BookRepository.ListBooks()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to return all books: %v", err)
 		return
 	}
+	logger.WithFunction().WithField("books", books).Info("return list of all available books")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"books": books,
 	})
 }
 
 func writeError(w http.ResponseWriter, code int, formatstr string, args ...interface{}) {
+	logger.WithFunction().Errorf(formatstr, args...)
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": fmt.Sprintf(formatstr, args...),
 	})
+}
+
+func setCookie(w http.ResponseWriter, r *http.Request, cookieName, cookieValue string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:    cookieName,
+		Value:   cookieValue,
+		Expires: time.Now().Add(365 * 24 * time.Hour),
+		Path:    "/",
+	})
+	if value, err := r.Cookie("tokencookie"); err != nil || value == nil {
+		logger.WithFunction().Error("cookie is not set")
+	} else {
+		logger.WithFunction().Info("cookie is set")
+	}
 }

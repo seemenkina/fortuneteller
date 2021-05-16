@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-	"log"
+	"expvar"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,17 +12,21 @@ import (
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
 	fthttp "fortuneteller/internal/delivery/http"
+	"fortuneteller/internal/logger"
 	"fortuneteller/internal/repository"
 	"fortuneteller/internal/service"
 
 	"github.com/ardanlabs/conf"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
+
 	// =========================================================================
 	// Configuration database
-	log.Printf("START CONFIGURATE DATABASE")
+
+	logger.WithFunction().Infof("starting the database configuration")
 	ctx := context.Background()
 
 	var cfg struct {
@@ -40,12 +43,12 @@ func main() {
 		if err == conf.ErrHelpWanted {
 			usage, err := conf.Usage("FORTUNETELLER", &cfg)
 			if err != nil {
-				log.Printf("generating config usage: %v", err)
+				logger.WithFunction().Errorf("generating config usage: %v", err)
 			}
-			fmt.Println(usage)
+			logger.WithFunction().Info(usage)
 			return
 		}
-		log.Printf("error: parsing config : %v", err)
+		logger.WithFunction().Errorf("parsing config : %v", err)
 	}
 
 	rawDBConn, err := data.Open(ctx, data.Config{
@@ -56,42 +59,42 @@ func main() {
 		DisableTLS:   cfg.DB.DisableTLS,
 	})
 	if err != nil {
-		log.Printf("unable to connect db: %v", err)
+		logger.WithFunction().Errorf("unable to connect db: %v", err)
 		return
 	}
 	defer func() {
-		log.Printf("database stopping")
+		logger.WithFunction().Info("database stopping")
 		rawDBConn.Close()
 	}()
-	log.Printf("SUCCES CONFIGURATE DATABASE")
+	logger.WithFunction().Info("the database is succesfully configured")
 
 	// =========================================================================
 	// Configuration user interface
 
-	log.Printf("START CONFIGURATE USER SERVICE")
+	logger.WithFunction().Info("starting the user service configuration")
 	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
 	var userService = &service.UserService{
-		Repo: repository.NewUserInterface(rawDBConn),
+		UserRepository: repository.NewUserInterface(rawDBConn),
 		Token: crypto.MumboJumbo{
 			Key: []byte(key),
 		},
 	}
-	log.Printf("SUCCES CONFIGURATE USER SERVICE")
+	logger.WithFunction().Info("the user service is succesfully configured")
 
 	// =========================================================================
 	// Configuration interface for question
+	logger.WithFunction().Info("starting the question service configuration")
 
-	exe, err := os.Executable()
+	exe, _ := os.Executable()
 	dir := filepath.Dir(exe)
-	log.Printf("EXECUTABLE DIR: %s", dir)
+	logger.WithFunction().Info("executable directory for books interface: %s", dir)
 
-	log.Printf("START CONFIGURATE QUESTION SERVICE")
 	var questionService = &service.QuestionService{
-		Repoq: repository.NewQuestionInterface(rawDBConn),
-		Repou: userService.Repo,
-		Repob: repository.NewBookFileSystem(filepath.Join(dir, "books"), filepath.Join(dir, "books_keys")),
+		QuestionRepository: repository.NewQuestionInterface(rawDBConn),
+		UserRepository:     userService.UserRepository,
+		BookRepository:     repository.NewBookFileSystem(filepath.Join(dir, "books"), filepath.Join(dir, "books_keys")),
 	}
-	log.Printf("SUCCES CONFIGURATE QUESTION SERVICE")
+	logger.WithFunction().Info("the question service is succesfully configured")
 
 	// =========================================================================
 	// Configuration router and subrouter
@@ -107,39 +110,43 @@ func main() {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/homepage", http.StatusFound)
 	})
+	router.Handle("/stats/", expvar.Handler())
 
 	router.MatcherFunc(func(r *http.Request, match *mux.RouteMatch) bool {
 		return !strings.HasPrefix(r.URL.Path, "/api")
 	}).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("url: %s", r.URL.Path)
-		if r.URL.Path == "/cuteregister" {
+		// redirect to register page if no cookies are set
+		if r.URL.Path != "/cuteregister" {
 
-		} else {
 			// Read cookie
 			c, err := r.Cookie("tokencookie")
-			log.Printf("url: %s cookie: %v\n", r.URL.Path, c)
+			logger.WithFunction().WithFields(logrus.Fields{
+				"url":    r.URL.Path,
+				"cookie": c,
+			})
 			if err != nil || c.Value == "" {
 				http.Redirect(w, r, "/cuteregister", http.StatusFound)
 				return
 			}
 		}
+		// redirect to correspond html page
 		http.ServeFile(w, r, filepath.Join("./assets/html", r.URL.Path[1:]+".html"))
 	})
 
 	apiRouter := router.PathPrefix("/api/v1/").Subrouter()
 
-	apiRouter.HandleFunc("/auth/register", us.HandlerRegisterPost).Methods("POST")
-	apiRouter.HandleFunc("/auth/login", us.HandlerLoginPost).Methods("POST")
+	apiRouter.HandleFunc("/auth/register", us.HandlerRegister).Methods("POST")
+	apiRouter.HandleFunc("/auth/login", us.HandlerLogin).Methods("POST")
 
-	apiRouter.HandleFunc("/users", us.HandlerListsUser).Methods("GET")
-	apiRouter.HandleFunc("/users/questions", us.HandlerUserQuestionsGet).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/answer", us.HandlerAnswerGet).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/otherAnswer", us.HandlerOtherAnswerGet).Methods("GET")
+	apiRouter.HandleFunc("/users", us.HandlerListUsers).Methods("GET")
+	apiRouter.HandleFunc("/users/questions", us.HandlerGetUserQuestions).Methods("GET")
+	apiRouter.HandleFunc("/users/questions/answer", us.HandlerGetAnswerToQuestion).Methods("GET")
+	apiRouter.HandleFunc("/users/questions/otherAnswer", us.HandlerGetAnswerToQuestionFromAnotherBook).Methods("GET")
+
 	apiRouter.HandleFunc("/users/questions/ask", us.HandlerListBooks).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestionPost).Methods("POST")
+	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestion).Methods("POST")
 
-	err = http.ListenAndServe(":8080", router)
-	if err != nil {
-		log.Fatalf("error: %v", err)
+	if err = http.ListenAndServe(":8080", router); err != nil {
+		logger.WithFunction().WithError(err)
 	}
 }

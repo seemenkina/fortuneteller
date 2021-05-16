@@ -3,34 +3,37 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"fortuneteller/internal/data"
+	"fortuneteller/internal/logger"
 	"fortuneteller/internal/repository"
+	"github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
 )
 
 type QuestionService struct {
-	Repoq repository.Question
-	Repou repository.User
-	Repob repository.Book
+	UserRepository     repository.User
+	BookRepository     repository.Book
+	QuestionRepository repository.Question
 }
 
 func (qs QuestionService) AskQuestion(ctx context.Context, question string, user data.User, askData data.FromAskData) (data.Question, error) {
-	book := qs.Repob.GetBookKey(askData.Name)
+	logger.WithFunction().WithField("question", question).Info("starting to ask question")
 
-	log.Printf("QUESTION: %s ", question)
+	book := qs.BookRepository.GetBookKey(askData.Name)
+
 	encryptedQuestion := book.Encrypt([]byte(question))
+	logger.WithFunction().WithField(
+		"encrypted_question", question).Info("the question is encrypted for writing to the database")
 
-	answer, err := qs.Repob.FindRowInBook(askData.Name, askData.Row)
+	answer, err := qs.BookRepository.FindRowInBook(askData.Name, askData.Row)
 	if err != nil {
 		return data.Question{}, fmt.Errorf("cant find answer : %v", err)
 	}
 
-	log.Printf("EQUESTION: %s ", encryptedQuestion)
 	bdata := askData.Name + ":" + strconv.Itoa(askData.Row)
 	q := data.Question{
 		ID:       uuid.New().String(),
@@ -39,26 +42,26 @@ func (qs QuestionService) AskQuestion(ctx context.Context, question string, user
 		BData:    bdata,
 		Owner:    user.ID,
 	}
-	if err := qs.Repoq.AddQuestion(ctx, q); err != nil {
+	if err := qs.QuestionRepository.AddQuestion(ctx, q); err != nil {
 		return data.Question{}, fmt.Errorf("cant add question : %v", err)
 	}
 	return q, nil
 }
 
 func (qs QuestionService) ListUserEncryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
-	user, err := qs.Repou.FindUserByName(ctx, username)
+	user, err := qs.UserRepository.FindUserByName(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("can't find user by name %s : %v", username, err)
 	}
-	return qs.Repoq.FindUserQuestion(ctx, user.ID)
+	return qs.QuestionRepository.FindUserQuestion(ctx, user.ID)
 }
 
 func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, username string) ([]data.Question, error) {
-	user, err := qs.Repou.FindUserByName(ctx, username)
+	user, err := qs.UserRepository.FindUserByName(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("can't find user by name %s : %v", username, err)
 	}
-	questions, err := qs.Repoq.FindUserQuestion(ctx, user.ID)
+	questions, err := qs.QuestionRepository.FindUserQuestion(ctx, user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("can't find user questions: %v", err)
 	} else if questions == nil {
@@ -67,7 +70,7 @@ func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, userna
 
 	for i, question := range questions {
 		bookname := strings.Split(question.BData, ":")[0]
-		book := qs.Repob.GetBookKey(bookname)
+		book := qs.BookRepository.GetBookKey(bookname)
 		decryptedQuestion, err := book.Decrypt([]byte(question.Question))
 		if err != nil {
 			return nil, fmt.Errorf("cant decrypt question : %v", err)
@@ -79,28 +82,28 @@ func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, userna
 }
 
 func (qs QuestionService) ListBooks() ([]data.Book, error) {
-	return qs.Repob.ListBooks()
+	return qs.BookRepository.ListBooks()
 }
 
 func (qs QuestionService) FindUserQuestionByID(ctx context.Context, id string, username string) (data.Question, error) {
-	question, err := qs.Repoq.FindQuestionByID(ctx, id)
+	question, err := qs.QuestionRepository.FindQuestionByID(ctx, id)
 	if err != nil {
 		return data.Question{}, fmt.Errorf("can't find question: %v", err)
 	}
-	user, err := qs.Repou.FindUserByName(ctx, username)
+	user, err := qs.UserRepository.FindUserByName(ctx, username)
 	if err != nil {
 		return data.Question{}, fmt.Errorf("can't find user by name %s : %v", username, err)
 	}
 
 	if question.Owner == user.ID {
 		bookname := strings.Split(question.BData, ":")[0]
-		book := qs.Repob.GetBookKey(bookname)
+		book := qs.BookRepository.GetBookKey(bookname)
 		b, err := book.Decrypt([]byte(question.Question))
 		if err != nil {
 			return data.Question{}, fmt.Errorf("cant decrypt question : %v", err)
 		}
 		question.Question = string(b)
-		log.Printf("DQUESTION: %v", string(b))
+		logger.WithFunction().WithField("decrypted_question", string(b)).Info("the question is decrypted")
 	}
 	return question, nil
 }
@@ -108,7 +111,7 @@ func (qs QuestionService) FindUserQuestionByID(ctx context.Context, id string, u
 func (qs QuestionService) AskQuestionFromAnotherBook(ctx context.Context,
 	question data.Question, usernameFromCookie, bookname string) (data.Question, error) {
 
-	questionOwner, err := qs.Repou.FindUserByID(ctx, question.Owner)
+	questionOwner, err := qs.UserRepository.FindUserByID(ctx, question.Owner)
 	if err != nil {
 		return data.Question{}, fmt.Errorf("can't find user by name %s : %v", questionOwner, err)
 	}
@@ -116,11 +119,14 @@ func (qs QuestionService) AskQuestionFromAnotherBook(ctx context.Context,
 	// Find row in new book for question from request
 	bookData := strings.Split(question.BData, ":")
 	if bookData[0] == bookname {
-		log.Printf("THIS BOOK EQUAL: %s, %s", bookData[0], bookname)
+		logger.WithFunction().WithFields(logrus.Fields{
+			"book":     bookData[0],
+			"new_book": bookname,
+		}).Info("book name and new book name are equal")
 		return question, nil
 	}
 	row, _ := strconv.Atoi(bookData[1])
-	answer, err := qs.Repob.FindRowInBook(bookname, row)
+	answer, err := qs.BookRepository.FindRowInBook(bookname, row)
 	if err != nil {
 		return data.Question{}, fmt.Errorf("cant find answer : %v", err)
 	}
@@ -132,8 +138,8 @@ func (qs QuestionService) AskQuestionFromAnotherBook(ctx context.Context,
 		}, nil
 	} else {
 		// return encrypted question on new book key
-		book := qs.Repob.GetBookKey(bookData[0])
-		newBook := qs.Repob.GetBookKey(bookname)
+		book := qs.BookRepository.GetBookKey(bookData[0])
+		newBook := qs.BookRepository.GetBookKey(bookname)
 
 		decryptedQuestion, err := book.Decrypt([]byte(question.Question))
 		if err != nil {

@@ -16,9 +16,9 @@ var ErrNoSuchUser = errors.New("no such user")
 type User interface {
 	AddUser(ctx context.Context, u data.User) error
 	AllUsers(ctx context.Context) ([]data.User, error)
+	FindUserByID(ctx context.Context, id string) (data.User, error)
 	FindUserByName(ctx context.Context, name string) (data.User, error)
 	FindUserByToken(ctx context.Context, token string) (data.User, error)
-	FindUserByID(ctx context.Context, id string) (data.User, error)
 }
 
 type userdb struct {
