@@ -1,0 +1,108 @@
+<!DOCTYPE HTML>
+<!--
+	Story by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+<head>
+    <title>Story by HTML5 UP</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
+    <link rel="stylesheet" href="/static/css/hack.css"/>
+    <noscript>
+        <link rel="stylesheet" href="/static/css/noscript.css"/>
+    </noscript>
+    <style>
+        body {
+            background: rgba(252, 252, 252, 0.7) url("https://live.staticflickr.com/2521/4198754159_cb8a1d7dae_k.jpg") no-repeat;
+            background-size: cover;
+            position: relative;
+        }
+        dt {
+            word-break: break-all;
+        }
+    </style>
+    <style>
+        .layer {
+            overflow: auto; /* Добавляем полосы прокрутки */
+            max-width: 100vh; /* Ширина блока */
+            max-height: 70vh;
+            padding: 2rem 5rem 3rem 5rem !important;
+        }
+    </style>
+</head>
+<body class="is-preload">
+
+<!-- Wrapper -->
+<div id="wrapper" class="divided">
+
+    <!-- One -->
+    <section
+            class="banner style1 orient-left content-align-left image-position-right fullscreen onload-image-fade-in onload-content-fade-right">
+        <div class="content layer" style="font-weight: bold;">
+            <h3><span id="title"></span></h3>
+            <dl id="list_questions"></dl>
+
+        </div>
+        <div class="content">
+            <h1>Home Page</h1>
+            <ul class="actions stacked fit">
+                <li><a href="/ask" class="button styleb fit">Ask your question</a></li>
+                <li><a href="/questions" class="button styleb fit">My question</a></li>
+                <li><a href="/users" class="button styleb fit">All users</a></li>
+                <li><a href="/logout" class="button styleb fit">Logout</a></li>
+            </ul>
+
+        </div>
+
+    </section>
+
+</div>
+
+<!-- Scripts -->
+<script src="/static/js/jquery.min.js"></script>
+<script src="/static/js/jquery.scrollex.min.js"></script>
+<script src="/static/js/jquery.scrolly.min.js"></script>
+<script src="/static/js/browser.min.js"></script>
+<script src="/static/js/breakpoints.min.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/main.js"></script>
+
+
+
+<script>
+    $(document).ready(function () {
+         if (window.location.hash.slice(1) !== "") {
+             $('#title').append("If you want to ask this question again without even knowing it, click on it")
+         };
+
+        $.ajax({
+            url: '/api/v1/users/questions',
+            type: 'get',
+            dataType: 'json',
+            data: {
+                "username": window.location.hash.slice(1),
+            },
+            success: function (data) {
+                data['questions'].forEach(function (el) {
+                    $("#list_questions").append(
+                        $(`
+                        <dt><a href="/answer#${el["ID"]}">${el["Question"]}</a></dt>
+                        <dd>
+                            <p>${el["Answer"]}</p>
+                        </dd>
+                        `)
+                    )
+                });
+            },
+            error: function (data) {
+                console.log(data)
+            }
+        });
+    })
+</script>
+
+</body>
+</html>

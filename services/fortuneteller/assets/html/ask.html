@@ -1,0 +1,143 @@
+<!DOCTYPE HTML>
+<!--
+	Story by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+<head>
+    <title>Story by HTML5 UP</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="/static/css/main.css"/>
+    <link rel="stylesheet" href="/static/css/hack.css"/>
+    <noscript>
+        <link rel="stylesheet" href="/static/css/noscript.css"/>
+    </noscript>
+    <style>
+        body {
+            background: rgba(252, 252, 252, 0.7) url("https://live.staticflickr.com/2521/4198754159_cb8a1d7dae_k.jpg") no-repeat;
+            background-size: cover;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="is-preload">
+
+<!-- Wrapper -->
+<div id="wrapper" class="divided heightmax">
+
+    <!-- Five -->
+    <section class="wrapper style1 align-center">
+        <div class="inner heightmax paddings">
+            <h1>Ask your question</h1>
+            <div class="content">
+                <form method="post" action="answer.html">
+                    <div class="fields">
+                        <div class="field">
+                            <label for="question"><h2>Your question</h2></label>
+                            <textarea name="question" id="question" rows="1"></textarea>
+                            <h2>Choose one book</h2>
+                        </div>
+                        <div class="field">
+                            <div id="gallery" class="gallery style2 small onscroll-fade-in">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="volume-control"><h2>Choose a row in the book</h2></label>
+                            <input type="range" id="volume-control" style="width: 60%;">
+                            <output for="volume-control" class="output" id="box-range"></output>
+                        </div>
+
+                    </div>
+                </form>
+                <a class="button styleb fit" id="ask">Ask question</a>
+            </div>
+        </div>
+
+    </section>
+
+</div>
+
+<!-- Scripts -->
+<script src="/static/js/jquery.min.js"></script>
+<script src="/static/js/jquery.scrollex.min.js"></script>
+<script src="/static/js/jquery.scrolly.min.js"></script>
+<script src="/static/js/hacks.js"></script>
+
+<script lang="JavaScript">
+    function addArticle(name, data, len) {
+        $("#gallery").append(
+            $(`
+                <article class="article_space">
+                        <img src="${name}" alt="" x-data="${data}" x-len=${len}>
+                </article>`)
+        )
+    }
+
+    $.ajax({
+        url: '/api/v1/users/questions/ask',
+        type: 'get',
+        dataType: 'json',
+        async: false,
+        success: function (data) {
+            var booksname = ["/static/images/book1.jpg", "/static/images/book2.jpg", "/static/images/book3.jpg", "/static/images/book4.jpg"]
+            var i = 0;
+            data["books"].forEach(function (element) {
+                addArticle(booksname[i], element["Name"], element["Rows"]);
+                i = i + 1;
+            });
+
+            $('article').click(ev => {
+                $('article>img').removeClass("stylebook")
+                $(ev.target).addClass("stylebook")
+                $("#volume-control").attr("max", $(ev.target).attr("x-len"))
+                $("#volume-control").val($("#volume-control").attr("max") / 2).trigger("input")
+            });
+        },
+        error: function (data) {
+            console.log(data)
+        }
+    });
+</script>
+
+<script lang="JavaScript">
+    $(document).ready(function () {
+        $('#volume-control').on("input", function () {
+            $('#box-range').val(this.value);
+        }).trigger("change");
+
+        $('#ask').click(function () {
+            $.ajax({
+                url: '/api/v1/users/questions/ask',
+                type: 'post',
+                dataType: 'json',
+                data: {
+                    "book": $(".stylebook").attr("x-data"),
+                    "question": $('#question').val(),
+                    "page": $("#volume-control").val(),
+                },
+                success: function (data) {
+                    window.location.href = data['redirect'];
+                },
+                error: function (data) {
+                    console.log(data)
+                    alertFunction("Try again!")
+                }
+            });
+        })
+
+    })
+
+</script>
+
+
+<script src="/static/js/browser.min.js"></script>
+<script src="/static/js/breakpoints.min.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/main.js"></script>
+
+
+</body>
+</html>
