@@ -383,28 +383,24 @@ def die(code: ExitStatus, msg: str):
 
 
 def _main():
-    # jd = put("localhost", "", "this is new flag")
-    # get("localhost", jd, "this is new flag")
-    check("localhost")
-
-    # try:
-    #     cmd = argv[1]
-    #     hostname = argv[2]
-    #     if cmd == "get":
-    #         fid, flag = argv[3], argv[4]
-    #         get(hostname, fid, flag)
-    #     elif cmd == "put":
-    #         fid, flag = argv[3], argv[4]
-    #         put(hostname, fid, flag)
-    #     elif cmd == "check":
-    #         check(hostname)
-    #     else:
-    #         raise IndexError
-    # except IndexError:
-    #     die(
-    #         ExitStatus.CHECKER_ERROR,
-    #         f"Usage: {argv[0]} check|put|get IP FLAGID FLAG",
-    #     )
+    try:
+        cmd = argv[1]
+        hostname = argv[2]
+        if cmd == "get":
+            fid, flag = argv[3], argv[4]
+            get(hostname, fid, flag)
+        elif cmd == "put":
+            fid, flag = argv[3], argv[4]
+            put(hostname, fid, flag)
+        elif cmd == "check":
+            check(hostname)
+        else:
+            raise IndexError
+    except IndexError:
+        die(
+            ExitStatus.CHECKER_ERROR,
+            f"Usage: {argv[0]} check|put|get IP FLAGID FLAG",
+        )
 
 
 if __name__ == "__main__":
