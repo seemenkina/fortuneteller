@@ -82,11 +82,9 @@
         dataType: 'json',
         async: false,
         success: function (data) {
-            console.log(data);
             var booksname = ["/static/images/book1.jpg", "/static/images/book2.jpg", "/static/images/book3.jpg", "/static/images/book4.jpg"]
             var i = 0;
             data["books"].forEach(function (element) {
-                console.log(element);
                 addArticle(booksname[i], element["Name"], element["Rows"]);
                 i = i + 1;
             });
@@ -121,7 +119,6 @@
                     "page": $("#volume-control").val(),
                 },
                 success: function (data) {
-                    console.log(data);
                     window.location.href = data['redirect'];
                 },
                 error: function (data) {

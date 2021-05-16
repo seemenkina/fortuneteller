@@ -75,7 +75,6 @@
                 dataType: 'json',
                 data: $('#register-form').serialize(),
                 success: function (data) {
-                    console.log(data)
                     localStorage.setItem('username', data['username'])
                     window.location = data['redirect']
                 },
@@ -92,7 +91,6 @@
                 dataType: 'json',
                 data: $('#login-form').serialize(),
                 success: function (data) {
-                    console.log(data)
                     localStorage.setItem('username', data['username'])
                     window.location = data['redirect']
                 },

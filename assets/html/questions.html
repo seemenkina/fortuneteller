@@ -86,9 +86,7 @@
                 "username": window.location.hash.slice(1),
             },
             success: function (data) {
-                console.log(data);
                 data['questions'].forEach(function (el) {
-                    console.log(el);
                     $("#list_questions").append(
                         $(`
                         <dt><a href="/answer#${el["ID"]}">${el["Question"]}</a></dt>

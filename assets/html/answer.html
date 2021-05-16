@@ -87,13 +87,9 @@
                 "id": window.location.hash.slice(1),
             },
             success: function (data) {
-                console.log(data);
                 data["Books"].forEach(function (element) {
-                    console.log(element);
                     addBookName(element["Name"], element["Name"])
                 });
-
-                console.log(window.location.hash.slice(1))
                 $('#question').text(data["Question"]);
                 $('#answer').text(data["Answer"]);
             },
@@ -113,7 +109,6 @@
                     "id_book": $('#books').val(),
                 },
                 success: function (data) {
-                    console.log(data);
                     $('#question').text(data["Question"]);
                     $('#answer').text(data["Answer"]);
                 },
