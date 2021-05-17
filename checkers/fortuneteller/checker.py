@@ -69,7 +69,7 @@ def put(host: str, flag_id: str, flag: str):
     })
 
     print(jd, flush=True)  # It's our flag_id now! Tell it to jury!
-    die(ExitStatus.OK, f"All OK! Saved flag: {jd}")
+    die(ExitStatus.OK, f"{jd}")
 
 
 def get(host: str, flag_id: str, flag: str):
@@ -307,7 +307,10 @@ def _check_ask_again(s):
         die(ExitStatus.DOWN, f"Failed to ask question to another book in service: {e}")
 
     if r.status_code != 200:
-        die(ExitStatus.MUMBLE, f"Unexpected  /users/questions/otherAnswer code {r.status_code}")
+        if "row in books must be greater or equal then find row" in r.json()["error"]:
+            return True
+        else:
+            die(ExitStatus.MUMBLE, f"Unexpected  /users/questions/otherAnswer code {r.status_code}")
 
     if r.json()["Question"] == flag:
         return True
@@ -384,7 +387,8 @@ def die(code: ExitStatus, msg: str):
 
 
 def info():
-    print("vulns: 1:1:1", flush=True, end="")
+    print('{"vulns": 1, "timeout": 30, "attack_data": ""}', flush=True, end="")
+    # print("vulns : 1", flush=True, end="")
     exit(101)
 
 
