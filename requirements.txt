@@ -1,2 +1,5 @@
-pyyaml
+pyyaml~=5.4.1
 dockerfile-parse
+gmpy2~=2.0.8
+libnum~=1.7.1
+requests~=2.25.1

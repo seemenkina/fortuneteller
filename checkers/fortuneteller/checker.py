@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import inspect
 import json
 import os
@@ -18,7 +20,7 @@ PORT = 8080
 EXPLOIT_NAME = argv[0]
 
 # DEBUG -- logs to stderr, TRACE -- log HTTP requests
-DEBUG = os.getenv("DEBUG", True)
+DEBUG = os.getenv("DEBUG", False)
 TRACE = os.getenv("TRACE", False)
 """ </config> """
 
@@ -67,8 +69,7 @@ def put(host: str, flag_id: str, flag: str):
     })
 
     print(jd, flush=True)  # It's our flag_id now! Tell it to jury!
-    # die(ExitStatus.OK, f"All OK! Saved flag: {jd}")
-    return jd
+    die(ExitStatus.OK, f"All OK! Saved flag: {jd}")
 
 
 def get(host: str, flag_id: str, flag: str):
@@ -382,6 +383,11 @@ def die(code: ExitStatus, msg: str):
     exit(code.value)
 
 
+def info():
+    print("vulns: 1:1:1", flush=True, end="")
+    exit(101)
+
+
 def _main():
     try:
         cmd = argv[1]
@@ -394,6 +400,8 @@ def _main():
             put(hostname, fid, flag)
         elif cmd == "check":
             check(hostname)
+        elif cmd == "info":
+            info()
         else:
             raise IndexError
     except IndexError:
