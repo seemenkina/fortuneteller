@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"expvar"
 	"net/http"
 	"os"
@@ -37,6 +36,7 @@ func main() {
 			DatabaseName string `conf:"default:pgdb"`
 			DisableTLS   string `conf:"default:disable"`
 		}
+		TokenKey string `conf:"noprint"`
 	}
 
 	if err := conf.Parse(os.Args[1:], "FORTUNETELLER", &cfg); err != nil {
@@ -72,7 +72,7 @@ func main() {
 	// Configuration user interface
 
 	logger.WithFunction().Info("starting the user service configuration")
-	key := hex.EncodeToString([]byte("~ThisIsMagicKey~"))
+	key := []byte(cfg.TokenKey)
 	var userService = &service.UserService{
 		UserRepository: repository.NewUserInterface(rawDBConn),
 		Token: crypto.MumboJumbo{
@@ -87,7 +87,7 @@ func main() {
 
 	exe, _ := os.Executable()
 	dir := filepath.Dir(exe)
-	logger.WithFunction().Info("executable directory for books interface: %s", dir)
+	logger.WithFunction().Infof("executable directory for books interface: %s", dir)
 
 	var questionService = &service.QuestionService{
 		QuestionRepository: repository.NewQuestionInterface(rawDBConn),
