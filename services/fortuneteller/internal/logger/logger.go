@@ -27,6 +27,10 @@ func (l *lastLogsHook) Fire(entry *logrus.Entry) error {
 var Log = func() *logrus.Logger {
 	l := logrus.New()
 	l.SetLevel(logrus.DebugLevel)
+	l.SetFormatter(&logrus.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: true,
+	})
 
 	lastLogs := &lastLogsHook{
 		r: ring.New(50),
