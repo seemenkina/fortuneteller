@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+
 	"fortuneteller/internal/data"
 	"fortuneteller/internal/logger"
 	"fortuneteller/internal/service"
-	"github.com/sirupsen/logrus"
-
-	"github.com/gorilla/mux"
 )
 
 type UserSubrouter struct {

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
 	"fortuneteller/internal/repository"
-
-	"github.com/google/uuid"
 )
 
 type UserService struct {

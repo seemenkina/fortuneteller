@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"fortuneteller/internal/data"
 	"fortuneteller/internal/logger"
 	"fortuneteller/internal/repository"
-	"github.com/sirupsen/logrus"
-
-	"github.com/google/uuid"
 )
 
 type QuestionService struct {

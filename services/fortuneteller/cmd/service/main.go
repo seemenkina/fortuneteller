@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ardanlabs/conf"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
@@ -17,9 +19,6 @@ import (
 	"fortuneteller/internal/logger"
 	"fortuneteller/internal/repository"
 	"fortuneteller/internal/service"
-
-	"github.com/ardanlabs/conf"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {

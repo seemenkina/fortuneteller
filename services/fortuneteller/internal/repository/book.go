@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
+
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
 	"fortuneteller/internal/logger"
-	"github.com/sirupsen/logrus"
 )
 
 type Book interface {
