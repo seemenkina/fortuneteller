@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"expvar"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gorilla/mux"
 
 	"fortuneteller/internal/crypto"
 	"fortuneteller/internal/data"
@@ -16,18 +19,10 @@ import (
 	"fortuneteller/internal/service"
 
 	"github.com/ardanlabs/conf"
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-
-	// =========================================================================
-	// Configuration database
-
-	logger.WithFunction().Infof("starting the database configuration")
-	ctx := context.Background()
-
 	var cfg struct {
 		DB struct {
 			User         string `conf:"default:admin"`
@@ -36,20 +31,28 @@ func main() {
 			DatabaseName string `conf:"default:pgdb"`
 			DisableTLS   string `conf:"default:disable"`
 		}
-		TokenKey string `conf:"noprint"`
+		TokenKey string `conf:"noprint,flag:token"`
 	}
 
-	if err := conf.Parse(os.Args[1:], "FORTUNETELLER", &cfg); err != nil {
-		if err == conf.ErrHelpWanted {
-			usage, err := conf.Usage("FORTUNETELLER", &cfg)
-			if err != nil {
-				logger.WithFunction().Errorf("generating config usage: %v", err)
-			}
-			logger.WithFunction().Info(usage)
-			return
+	err := conf.Parse(os.Args[1:], "FORTUNETELLER", &cfg)
+	switch {
+	case err == nil:
+		// pass
+	case errors.Is(err, conf.ErrHelpWanted):
+		if usage, err := conf.Usage("FORTUNETELLER", &cfg); err == nil {
+			println(usage)
+		} else {
+			logger.WithFunction().Fatalf("Can't generate config usage: %v", err)
 		}
-		logger.WithFunction().Errorf("parsing config : %v", err)
+	default:
+		logger.WithFunction().Fatalf("Can't parse config: %v", err)
 	}
+
+	// =========================================================================
+	// Configuration database
+
+	logger.WithFunction().Infof("starting the database configuration")
+	ctx := context.Background()
 
 	rawDBConn, err := data.Open(ctx, data.Config{
 		User:         cfg.DB.User,
@@ -66,20 +69,19 @@ func main() {
 		logger.WithFunction().Info("database stopping")
 		rawDBConn.Close()
 	}()
-	logger.WithFunction().Info("the database is succesfully configured")
+	logger.WithFunction().Info("the database is successfully configured")
 
 	// =========================================================================
 	// Configuration user interface
 
 	logger.WithFunction().Info("starting the user service configuration")
-	key := []byte(cfg.TokenKey)
 	var userService = &service.UserService{
 		UserRepository: repository.NewUserInterface(rawDBConn),
 		Token: crypto.MumboJumbo{
-			Key: []byte(key),
+			Key: []byte(cfg.TokenKey),
 		},
 	}
-	logger.WithFunction().Info("the user service is succesfully configured")
+	logger.WithFunction().Info("the user service is successfully configured")
 
 	// =========================================================================
 	// Configuration interface for question
@@ -94,16 +96,10 @@ func main() {
 		UserRepository:     userService.UserRepository,
 		BookRepository:     repository.NewBookFileSystem(filepath.Join(dir, "books"), filepath.Join(dir, "books_keys")),
 	}
-	logger.WithFunction().Info("the question service is succesfully configured")
+	logger.WithFunction().Info("the question service is successfully configured")
 
 	// =========================================================================
 	// Configuration router and subrouter
-
-	us := fthttp.UserSubrouter{
-		Router:          mux.Router{},
-		UserService:     userService,
-		QuestionService: questionService,
-	}
 
 	router := mux.NewRouter()
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./assets"))))
@@ -133,18 +129,23 @@ func main() {
 		http.ServeFile(w, r, filepath.Join("./assets/html", r.URL.Path[1:]+".html"))
 	})
 
-	apiRouter := router.PathPrefix("/api/v1/").Subrouter()
+	us := fthttp.UserSubrouter{
+		UserService:     userService,
+		QuestionService: questionService,
+	}
+	apiRouter := router.PathPrefix("/api/v1").Subrouter()
+	apiRouter.HandleFunc("/auth/register", us.Register).Methods("POST")
+	apiRouter.HandleFunc("/auth/login", us.Login).Methods("POST")
 
-	apiRouter.HandleFunc("/auth/register", us.HandlerRegister).Methods("POST")
-	apiRouter.HandleFunc("/auth/login", us.HandlerLogin).Methods("POST")
+	users := apiRouter.PathPrefix("/users").Subrouter()
+	users.Use(fthttp.AuthenticatedUser)
+	users.HandleFunc("", us.ListUsers).Methods("GET")
+	users.HandleFunc("/questions", us.GetUserQuestions).Methods("GET")
 
-	apiRouter.HandleFunc("/users", us.HandlerListUsers).Methods("GET")
-	apiRouter.HandleFunc("/users/questions", us.HandlerGetUserQuestions).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/answer", us.HandlerGetAnswerToQuestion).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/otherAnswer", us.HandlerGetAnswerToQuestionFromAnotherBook).Methods("GET")
-
-	apiRouter.HandleFunc("/users/questions/ask", us.HandlerListBooks).Methods("GET")
-	apiRouter.HandleFunc("/users/questions/ask", us.HandlerAskQuestion).Methods("POST")
+	users.HandleFunc("/questions/answer", us.GetAnswerFromBook).Methods("GET")
+	users.HandleFunc("/questions/otherAnswer", us.GetAnswerFromAnotherBook).Methods("GET")
+	users.HandleFunc("/questions/ask", us.ListBooks).Methods("GET")
+	users.HandleFunc("/questions/ask", us.AskQuestion).Methods("POST")
 
 	if err = http.ListenAndServe(":8080", router); err != nil {
 		logger.WithFunction().WithError(err)

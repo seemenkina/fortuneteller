@@ -22,7 +22,7 @@ type UserSubrouter struct {
 }
 
 // data in { username }
-func (usersubrouter UserSubrouter) HandlerRegister(w http.ResponseWriter, r *http.Request) {
+func (usersubrouter UserSubrouter) Register(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		writeError(w, http.StatusBadRequest, "failed to parse register form: %v", err)
 		return
@@ -54,7 +54,7 @@ func (usersubrouter UserSubrouter) HandlerRegister(w http.ResponseWriter, r *htt
 }
 
 // data in { token }
-func (usersubrouter UserSubrouter) HandlerLogin(w http.ResponseWriter, r *http.Request) {
+func (usersubrouter UserSubrouter) Login(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		writeError(w, http.StatusBadRequest, "failed to parse login form: %v", err)
 		return
@@ -86,7 +86,8 @@ func (usersubrouter UserSubrouter) HandlerLogin(w http.ResponseWriter, r *http.R
 }
 
 // data in { }
-func (usersubrouter UserSubrouter) HandlerListUsers(w http.ResponseWriter, r *http.Request) {
+func (usersubrouter UserSubrouter) ListUsers(w http.ResponseWriter, r *http.Request) {
+	logger.WithFunction().Info("Start list users")
 	users, err := usersubrouter.UserService.ListUsers(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to return all users: %v", err)
@@ -105,14 +106,10 @@ func (usersubrouter UserSubrouter) HandlerListUsers(w http.ResponseWriter, r *ht
 }
 
 // data in { username }
-func (usersubrouter UserSubrouter) HandlerGetUserQuestions(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("tokencookie")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
-		return
-	}
+func (usersubrouter UserSubrouter) GetUserQuestions(w http.ResponseWriter, r *http.Request) {
+	tokenFromCookie := tokenFromReq(r)
 
-	usernameFromCookie, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	usernameFromCookie, err := usersubrouter.UserService.Token.GetUsername(tokenFromCookie)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to get username by token: %v", err)
 		return
@@ -149,14 +146,10 @@ func (usersubrouter UserSubrouter) HandlerGetUserQuestions(w http.ResponseWriter
 }
 
 // data in { question id } (from URL)
-func (usersubrouter UserSubrouter) HandlerGetAnswerToQuestion(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("tokencookie")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
-		return
-	}
+func (usersubrouter UserSubrouter) GetAnswerFromBook(w http.ResponseWriter, r *http.Request) {
+	tokenFromCookie := tokenFromReq(r)
 
-	usernameFromCookie, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	usernameFromCookie, err := usersubrouter.UserService.Token.GetUsername(tokenFromCookie)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to get username by token: %v", err)
 		return
@@ -192,14 +185,10 @@ func (usersubrouter UserSubrouter) HandlerGetAnswerToQuestion(w http.ResponseWri
 }
 
 // data in { question id, new book id } (from url)
-func (usersubrouter UserSubrouter) HandlerGetAnswerToQuestionFromAnotherBook(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("tokencookie")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
-		return
-	}
+func (usersubrouter UserSubrouter) GetAnswerFromAnotherBook(w http.ResponseWriter, r *http.Request) {
+	tokenFromCookie := tokenFromReq(r)
 
-	usernameFromCookie, err := usersubrouter.UserService.Token.GetUsername(cookie.Value)
+	usernameFromCookie, err := usersubrouter.UserService.Token.GetUsername(tokenFromCookie)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to get username by token: %v", err)
 		return
@@ -241,14 +230,9 @@ func (usersubrouter UserSubrouter) HandlerGetAnswerToQuestionFromAnotherBook(w h
 }
 
 // data in { question, book , page }
-func (usersubrouter UserSubrouter) HandlerAskQuestion(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("tokencookie")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusBadRequest, "cookie is empty: %v", err)
-		return
-	}
-
-	user, err := usersubrouter.UserService.UserRepository.FindUserByToken(r.Context(), cookie.Value)
+func (usersubrouter UserSubrouter) AskQuestion(w http.ResponseWriter, r *http.Request) {
+	tokenFromCookie := tokenFromReq(r)
+	user, err := usersubrouter.UserService.UserRepository.FindUserByToken(r.Context(), tokenFromCookie)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to get user by token: %v", err)
 		return
@@ -285,7 +269,7 @@ func (usersubrouter UserSubrouter) HandlerAskQuestion(w http.ResponseWriter, r *
 	})
 }
 
-func (usersubrouter UserSubrouter) HandlerListBooks(w http.ResponseWriter, r *http.Request) {
+func (usersubrouter UserSubrouter) ListBooks(w http.ResponseWriter, r *http.Request) {
 	books, err := usersubrouter.QuestionService.BookRepository.ListBooks()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "unable to return all books: %v", err)
@@ -312,9 +296,4 @@ func setCookie(w http.ResponseWriter, r *http.Request, cookieName, cookieValue s
 		Expires: time.Now().Add(365 * 24 * time.Hour),
 		Path:    "/",
 	})
-	if value, err := r.Cookie("tokencookie"); err != nil || value == nil {
-		logger.WithFunction().Error("cookie is not set")
-	} else {
-		logger.WithFunction().Info("cookie is set")
-	}
 }
