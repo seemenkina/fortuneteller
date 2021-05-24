@@ -99,7 +99,6 @@ func (usersubrouter UserSubrouter) ListUsers(w http.ResponseWriter, r *http.Requ
 		usernames[i] = u.Username
 	}
 
-	logger.WithFunction().WithField("users", usernames).Info("return list of all users")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"users": usernames,
 	})
