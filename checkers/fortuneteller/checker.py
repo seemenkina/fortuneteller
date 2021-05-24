@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import datetime
 import inspect
 import json
 import os
@@ -278,6 +279,29 @@ def _check_logs(s):
     logs = r.json()['logs']
     if len(logs) == 0:
         return False
+    log_line = logs[0]
+
+    # drop part of color sequence
+    log_line = log_line.replace("\033[", "")
+
+    import re
+    match = re.search(r"\[([^]]*)\]", log_line)
+    if match and match.group(1):
+        log_time_reg = match.group(1)
+        log_time_struct = datetime.datetime.strptime(log_time_reg, "%Y-%m-%dT%H:%M:%SZ")
+        _log(f"Last time in logs: {log_time_struct}")
+
+        now_time = datetime.datetime.now().replace(microsecond=0)
+        now_time = (now_time - datetime.timedelta(hours=7)).isoformat()
+        now_time_struct = datetime.datetime.strptime(now_time, "%Y-%m-%dT%H:%M:%S")
+        _log(f"Current time : {now_time_struct}")
+
+        delta = now_time_struct - log_time_struct
+
+        if delta.seconds > 60 * 5:
+            _log(f"Difference between the last log and the current time in second: {delta.seconds}")
+            return False
+
     return True
 
 
