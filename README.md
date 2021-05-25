@@ -1,5 +1,5 @@
 # ZPD-training-service
-Services for A/D CTF training.
+Service for A/D CTF training.
 
 ## fortuneteller
 
