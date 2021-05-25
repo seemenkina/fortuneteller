@@ -21,7 +21,7 @@ PORT = 8080
 EXPLOIT_NAME = argv[0]
 
 # DEBUG -- logs to stderr, TRACE -- log HTTP requests
-DEBUG = os.getenv("DEBUG", False)
+DEBUG = os.getenv("DEBUG", True)
 TRACE = os.getenv("TRACE", False)
 """ </config> """
 
@@ -44,19 +44,19 @@ def check(host: str):
 
     _log("Check all users are displayed")
     if not _check_users(s, name, host):
-        die(ExitStatus.MUMBLE, "incorrect behavior of the service")
+        die(ExitStatus.MUMBLE, "failed to check users ")
 
     _log("Check logs are displayed")
     if not _check_logs(s):
-        die(ExitStatus.MUMBLE, "incorrect behavior of the service")
+        die(ExitStatus.MUMBLE, "failed to check logs")
 
     _log("Check ask a question to another book is correct")
     if not _check_ask_again(s):
-        die(ExitStatus.MUMBLE, "incorrect behavior of the service")
+        die(ExitStatus.MUMBLE, "failed to check another questions")
 
     _log("Check user questions are displayed")
     if not _check_questions(s, name, host):
-        die(ExitStatus.MUMBLE, "incorrect behavior of the service")
+        die(ExitStatus.MUMBLE, "failed to check questions")
 
     die(ExitStatus.OK, "Check ALL OK")
 
@@ -263,14 +263,14 @@ def _check_users(s, name, host):
     users = r.json()["users"]
     if name in users:
         if name_second not in users:
-            _log(f"Cant find this user {name} in {users}")
+            _log(f"Cant find this user {name_second} in {users}")
             _log("Find first, but not find second")
             return False
         else:
             return True
     else:
         _log(f"Cant find this user {name} in {users}")
-        return True
+        return False
 
 
 def _check_logs(s):
@@ -293,18 +293,16 @@ def _check_logs(s):
     match = re.search(r"\[([^]]*)\]", log_line)
     if match and match.group(1):
         log_time_reg = match.group(1)
-        log_time_struct = datetime.datetime.strptime(log_time_reg, "%Y-%m-%dT%H:%M:%SZ")
-        _log(f"Last time in logs: {log_time_struct}")
+        log_time_reg = log_time_reg.replace('Z', '+00:00')
+        log_time_struct = datetime.datetime.fromisoformat(log_time_reg)
+        _log(f"Last time in logs: {log_time_reg}->{log_time_struct.isoformat()}")
 
-        now_time = datetime.datetime.now().replace(microsecond=0)
-        now_time = (now_time - datetime.timedelta(hours=7)).isoformat()
-        now_time_struct = datetime.datetime.strptime(now_time, "%Y-%m-%dT%H:%M:%S")
-        _log(f"Current time : {now_time_struct}")
+        now_time = datetime.datetime.now(datetime.timezone.utc)
+        _log(f"Current time : {now_time.isoformat()}")
 
-        delta = now_time_struct - log_time_struct
-
-        if delta.seconds > 60 * 5:
-            _log(f"Difference between the last log and the current time in second: {delta.seconds} is too big")
+        delta = now_time - log_time_struct
+        if delta > datetime.timedelta(seconds=5*60):
+            _log(f"Difference between the last log and the current time is too big: {delta}")
             return False
 
     return True
@@ -372,16 +370,17 @@ def _check_questions(s, username, host):
         die(ExitStatus.MUMBLE, f"Unexpected  /users/questions code {r.status_code} {r.json()['error']}")
 
     questions = r.json()['questions']
-    if flag in questions:
-        if flag_2 not in questions:
-            _log(f"Cant find this question {flag_2} in {username}")
+    questions_id = [q["ID"] for q in r.json()["questions"]]
+    if q_id in questions_id:
+        if q_id_2 not in questions_id:
+            _log(f"Cant find this question {q_id_2} in {questions}")
             _log("Find first, but not find second")
             return False
         else:
             return True
     else:
-        _log(f"Cant find this question {flag_2} in {username}")
-        return True
+        _log(f"Cant find this question {q_id} in {questions}")
+        return False
 
 
 def _gen_secret_name() -> str:
@@ -453,8 +452,8 @@ def die(code: ExitStatus, msg: str):
 
 
 def info():
-    print('{"vulns": 1, "timeout": 30, "attack_data": ""}', flush=True, end="")
-    # print("vulns : 1", flush=True, end="")
+    # print('{"vulns": 1, "timeout": 30, "attack_data": ""}', flush=True, end="")
+    print("vulns: 1", flush=True, end="")
     exit(101)
 
 
