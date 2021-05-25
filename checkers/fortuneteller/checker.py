@@ -30,6 +30,7 @@ TRACE = os.getenv("TRACE", False)
 # check: all users are displayed (how: register 2 users and check both in list)
 # check: logs are displayed
 # check: ask a question to another book
+# check: user questions are displayed
 def check(host: str):
     s = FakeSession(host, PORT)
     name = _gen_secret_name()
@@ -51,6 +52,10 @@ def check(host: str):
 
     _log("Check ask a question to another book is correct")
     if not _check_ask_again(s):
+        die(ExitStatus.MUMBLE, "incorrect behavior of the service")
+
+    _log("Check user questions are displayed")
+    if not _check_questions(s, name, host):
         die(ExitStatus.MUMBLE, "incorrect behavior of the service")
 
     die(ExitStatus.OK, "Check ALL OK")
@@ -299,7 +304,7 @@ def _check_logs(s):
         delta = now_time_struct - log_time_struct
 
         if delta.seconds > 60 * 5:
-            _log(f"Difference between the last log and the current time in second: {delta.seconds}")
+            _log(f"Difference between the last log and the current time in second: {delta.seconds} is too big")
             return False
 
     return True
@@ -340,6 +345,43 @@ def _check_ask_again(s):
         return True
     else:
         return False
+
+
+def _check_questions(s, username, host):
+    flag = _gen_question_data()
+    q_id = _put(s, flag)
+
+    flag_2 = _gen_question_data()
+    q_id_2 = _put(s, flag_2)
+
+    s_second = FakeSession(host, PORT)
+    name_second = _gen_secret_name()
+    _register(s_second, name_second)
+
+    try:
+        r = s_second.get(
+            "/api/v1/users/questions",
+            params=dict(
+                username=username,
+            )
+        )
+    except Exception as e:
+        die(ExitStatus.DOWN, f"Failed to get questions from user {username}: {e}")
+
+    if r.status_code != 200:
+        die(ExitStatus.MUMBLE, f"Unexpected  /users/questions code {r.status_code} {r.json()['error']}")
+
+    questions = r.json()['questions']
+    if flag in questions:
+        if flag_2 not in questions:
+            _log(f"Cant find this question {flag_2} in {username}")
+            _log("Find first, but not find second")
+            return False
+        else:
+            return True
+    else:
+        _log(f"Cant find this question {flag_2} in {username}")
+        return True
 
 
 def _gen_secret_name() -> str:
