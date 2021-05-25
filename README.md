@@ -3,6 +3,8 @@ Services for A/D CTF training.
 
 ## fortuneteller
 
+Service for fortune-telling by books.
+
 ### Tags
 
 - golang
