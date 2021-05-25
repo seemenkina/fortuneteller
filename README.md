@@ -1,5 +1,5 @@
 # ZPD-training-service
-Service for A/D CTF training.
+Service for A/D CTF training on golang.
 
 ## fortuneteller
 
