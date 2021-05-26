@@ -2,7 +2,7 @@ FROM golang:alpine AS builder
 WORKDIR /app
 
 VOLUME ["/go", "/root/.cache"]
-COPY go.* .
+COPY go.* ./
 RUN go mod download
 
 COPY ./ ./
