@@ -64,8 +64,6 @@ func (qs QuestionService) ListUserDecryptedQuestions(ctx context.Context, userna
 	questions, err := qs.QuestionRepository.FindUserQuestion(ctx, user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("can't find user questions: %v", err)
-	} else if questions == nil {
-		return nil, fmt.Errorf("empty questions")
 	}
 
 	for i, question := range questions {
