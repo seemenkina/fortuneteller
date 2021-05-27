@@ -93,10 +93,14 @@ func (usersubrouter UserSubrouter) ListUsers(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusInternalServerError, "unable to return all users: %v", err)
 		return
 	}
-	// TODO: return last n usernames
+
 	usernames := make([]string, len(users))
 	for i, u := range users {
 		usernames[i] = u.Username
+	}
+
+	if len(usernames) > 50 {
+		usernames = usernames[len(usernames)-20:]
 	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
