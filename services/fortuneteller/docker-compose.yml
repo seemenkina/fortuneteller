@@ -21,8 +21,6 @@ services:
     volumes:
       - ./dbdata:/var/lib/postgresql/data
       # - ./create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
-    ports:
-      - 5432:5432
     environment:
       - POSTGRES_DB=pgdb
       - POSTGRES_USER=admin
