@@ -86,7 +86,7 @@
             type: 'get',
             dataType: 'json',
             data: {
-                "id": window.location.hash.slice(1),
+                "id": decodeURI(window.location.hash.slice(1)),
             },
             success: function (data) {
                 data["Books"].forEach(function (element) {
@@ -107,7 +107,7 @@
                 type: 'get',
                 dataType: 'json',
                 data: {
-                    "id": window.location.hash.slice(1),
+                    "id": decodeURI(window.location.hash.slice(1)),
                     "id_book": $('#books').val(),
                 },
                 success: function (data) {
