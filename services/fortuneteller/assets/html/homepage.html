@@ -53,7 +53,12 @@
 			<script src="/static/js/breakpoints.min.js"></script>
 			<script src="/static/js/util.js"></script>
 			<script src="/static/js/main.js"></script>
-
+			<script>
+				let isNotLoggedIn = document.cookie.indexOf('tokencookie=') === -1;
+				if (isNotLoggedIn) {
+					window.location.href = '/cuteregister';
+				}
+			</script>
 
 	</body>
 </html>

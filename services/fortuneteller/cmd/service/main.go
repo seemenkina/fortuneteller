@@ -112,13 +112,13 @@ func main() {
 	}).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// redirect to register page if no cookies are set
 		if r.URL.Path != "/cuteregister" {
-
 			// Read cookie
 			c, err := r.Cookie("tokencookie")
 			logger.WithFunction().WithFields(logrus.Fields{
 				"url":    r.URL.Path,
 				"cookie": c,
-			})
+			}).Info("Static page visited")
+
 			if err != nil || c.Value == "" {
 				http.Redirect(w, r, "/cuteregister", http.StatusFound)
 				return

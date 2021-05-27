@@ -66,17 +66,19 @@
 <script src="/static/js/util.js"></script>
 <script src="/static/js/main.js"></script>
 
-<script lang="JavaScript">
-    function addBookName(id, name) {
-        $("#books").append(
-            $(`
-                <option value="${id}"> ${name} </option>
-`)
-        )
+<script>
+    let isNotLoggedIn = document.cookie.indexOf('tokencookie=') === -1;
+    if (isNotLoggedIn) {
+        window.location.href = '/cuteregister';
     }
 </script>
 
 <script>
+    function addBookName(id, name) {
+        $("#books").append(
+            $(`<option value="${id}"> ${name} </option>`)
+        )
+    }
 
     $(document).ready(function () {
         $.ajax({
@@ -117,7 +119,6 @@
                 }
             });
         })
-
     })
 </script>
 

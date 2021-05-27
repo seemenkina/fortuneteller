@@ -66,6 +66,13 @@
 <script src="/static/js/jquery.scrolly.min.js"></script>
 <script src="/static/js/hacks.js"></script>
 
+<script>
+    let isNotLoggedIn = document.cookie.indexOf('tokencookie=') === -1;
+    if (isNotLoggedIn) {
+        window.location.href = '/cuteregister';
+    }
+</script>
+
 <script lang="JavaScript">
     function addArticle(name, data, len) {
         $("#gallery").append(
