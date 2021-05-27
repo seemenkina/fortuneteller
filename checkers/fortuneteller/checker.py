@@ -249,6 +249,7 @@ def _check_users(s, name, host):
     s_second = FakeSession(host, PORT)
     name_second = _gen_secret_name()
     _register(s_second, name_second)
+    _put(s_second, _gen_question_data())
 
     try:
         r = s.get(
@@ -355,6 +356,7 @@ def _check_questions(s, username, host):
     s_second = FakeSession(host, PORT)
     name_second = _gen_secret_name()
     _register(s_second, name_second)
+    _put(s_second, _gen_question_data())
 
     try:
         r = s_second.get(
@@ -452,8 +454,8 @@ def die(code: ExitStatus, msg: str):
 
 
 def info():
-    # print('{"vulns": 1, "timeout": 30, "attack_data": ""}', flush=True, end="")
-    print("vulns: 1", flush=True, end="")
+    print('{"vulns": 1, "timeout": 30, "attack_data": ""}', flush=True, end="")
+    # print("vulns: 1", flush=True, end="")
     exit(101)
 
 
