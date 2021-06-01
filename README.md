@@ -39,8 +39,8 @@ python3 checker.py
 ```
 
 To use it with ructf jury, you need to change the output format of the checker `info` function:
-- commit this row https://github.com/seemenkina/fortuneteller/blob/master/checkers/fortuneteller/checker.py#L457
-- delete commit from this row https://github.com/seemenkina/fortuneteller/blob/master/checkers/fortuneteller/checker.py#L458
+- comment this row https://github.com/seemenkina/fortuneteller/blob/master/checkers/fortuneteller/checker.py#L457
+- delete comment from this row https://github.com/seemenkina/fortuneteller/blob/master/checkers/fortuneteller/checker.py#L458
 
 
 ## Contributors
